@@ -15,7 +15,7 @@
 			"States": [
 				{
 					"Image": "imgs/plugin/python",
-					"TitleAlignment": "middle"
+					"TitleAlignment": "bottom"
 				}
 			]
 		}

@@ -48,12 +48,15 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 
 			pythonProcess.stdout.on('data', (data: { toString: () => string; }) => {
 				console.log(`stdout: ${data}`);
-				ev.action.setTitle(data.toString().trim());
+				if(settings.displayValues){ev.action.setTitle(data.toString().trim());}
 				if(settings.image1 && (data.toString().trim() == (settings.value1?? ""))){
 					ev.action.setImage(settings.image1)
+					
+					
 				}
 				if(settings.image2 && (data.toString().trim() == (settings.value2?? ""))){
 					ev.action.setImage(settings.image2)
+
 				}
 			});
 
@@ -87,4 +90,6 @@ type PythonScriptSettings = {
 	image1? : string;
 	value2? : string;
 	image2? : string;
+	displayValues: boolean;
+
 };
