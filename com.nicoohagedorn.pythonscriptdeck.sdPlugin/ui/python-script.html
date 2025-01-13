@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+    <title>Increment Counter Settings</title>
+    <meta charset="utf-8" />
+    <script src="https://cdn.jsdelivr.net/gh/geekyeggo/sdpi-components@v3/dist/sdpi-components.js"></script>
+</head>
+
+<body>
+    <!--
+        Learn more about property inspector components at https://sdpi-components.dev/docs/components
+    -->
+    <sdpi-item label="Path to Script">
+        <sdpi-file setting="path" accept="text/py"></sdpi-file>
+    </sdpi-item>
+    <sdpi-item label="return Value 1:">
+        <sdpi-textfield
+        setting="value1"
+        pattern="/^[a-z ,.'-]+$/i"
+        placeholder="first value"
+        required>
+    </sdpi-item>
+    <sdpi-item label="display Image for Value 1">
+        <sdpi-file setting="image1" accept="image/png, image/jpeg, image/gif"></sdpi-file>
+    </sdpi-item>
+    <sdpi-item label="return Value 2:">
+        <sdpi-textfield
+        setting="value2"
+        pattern="/^[a-z ,.'-]+$/i"
+        placeholder="second value"
+        >
+    </sdpi-item>
+    <sdpi-item label="display Image for Value 2">
+        <sdpi-file setting="image2" accept="image/png, image/jpeg, image/gif"></sdpi-file>
+    </sdpi-item>
+    <sdpi-item label="Reference:">
+    <a target="_blank" href="https://icons8.com/icon/13441/python">Python</a> Icon von <a target="_blank" href="https://icons8.com">Icons8</a>
+    <a target="_blank" href="https://icons8.com/icon/NeihSSyFcdVr/check-file">Datei Überprüfen</a> Icon von <a target="_blank" href="https://icons8.com">Icons8</a>
+</sdpi-item>
+</body>
+
+</html>

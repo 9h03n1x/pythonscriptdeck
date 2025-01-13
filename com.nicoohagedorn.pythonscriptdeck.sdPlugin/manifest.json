@@ -1,0 +1,47 @@
+{
+	"Name": "PythonScriptDeck",
+	"Version": "0.1.0.0",
+	"Author": "nicoohagedorn",
+	"Actions": [
+		{
+			"Name": "Counter",
+			"UUID": "com.nicoohagedorn.pythonscriptdeck.increment",
+			"Icon": "imgs/plugin/python",
+			"Tooltip": "Displays a count, which increments by one on press.",
+			"PropertyInspectorPath": "ui/python-script.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/plugin/python",
+					"TitleAlignment": "middle"
+				}
+			]
+		}
+	],
+	"Category": "PythonScriptDeck",
+	"CategoryIcon": "imgs/plugin/python",
+	"CodePath": "bin/plugin.js",
+	"Description": "This Plugin allows you to execute Pyhton scripts and display the results on a StreamDeck Key",
+	"Icon": "imgs/plugin/marketplace",
+	"SDKVersion": 2,
+	"Software": {
+		"MinimumVersion": "6.5"
+	},
+	"OS": [
+		{
+			"Platform": "mac",
+			"MinimumVersion": "10.15"
+		},
+		{
+			"Platform": "windows",
+			"MinimumVersion": "10"
+		}
+	],
+	"Nodejs": {
+		"Version": "20",
+		"Debug": "enabled"
+	},
+	"UUID": "com.nicoohagedorn.pythonscriptdeck"
+}
