@@ -4,7 +4,7 @@
 	"Author": "nicoohagedorn",
 	"Actions": [
 		{
-			"Name": "Counter",
+			"Name": "Run Script",
 			"UUID": "com.nicoohagedorn.pythonscriptdeck.increment",
 			"Icon": "imgs/plugin/python",
 			"Tooltip": "Displays a count, which increments by one on press.",
