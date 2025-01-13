@@ -1,5 +1,5 @@
 {
-	"Name": "PythonScriptDeck",
+	"Name": "Python Script Deck",
 	"Version": "0.1.0.0",
 	"Author": "nicoohagedorn",
 	"Actions": [
@@ -14,13 +14,13 @@
 			],
 			"States": [
 				{
-					"Image": "imgs/plugin/python",
+					"Image": "imgs/plugin/python_color",
 					"TitleAlignment": "bottom"
 				}
 			]
 		}
 	],
-	"Category": "PythonScriptDeck",
+	"Category": "Python Script Deck",
 	"CategoryIcon": "imgs/plugin/python",
 	"CodePath": "bin/plugin.js",
 	"Description": "This Plugin allows you to execute Pyhton scripts and display the results on a StreamDeck Key",
