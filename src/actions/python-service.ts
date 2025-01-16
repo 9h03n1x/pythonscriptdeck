@@ -1,17 +1,17 @@
-import { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
 import { ChildProcess, spawn } from "child_process";
 
 /**
  * An example action class that displays a count that increments by one each time the button is pressed.
  */
-@action({ UUID: "com.nicoohagedorn.pythonscriptdeck.script" })
-export class PythonScript extends SingletonAction<PythonScriptSettings> {
+@action({ UUID: "com.nicoohagedorn.pythonscriptdeck.service" })
+export class PythonService extends SingletonAction<PythonServiceSettings> {
 	/**
 	 * The {@link SingletonAction.onWillAppear} event is useful for setting the visual representation of an action when it becomes visible. This could be due to the Stream Deck first
 	 * starting up, or the user navigating between pages / folders etc.. There is also an inverse of this event in the form of {@link streamDeck.client.onWillDisappear}. In this example,
 	 * we're setting the title to the "count" that is incremented in {@link PythonScript.onKeyDown}.
 	 */
-	onWillAppear(ev: WillAppearEvent<PythonScriptSettings>): void | Promise<void> {
+	onWillAppear(ev: WillAppearEvent<PythonServiceSettings>): void | Promise<void> {
 		const settings = ev.payload.settings;
 		if (settings.path){
 			if(settings.path.includes(".py")){
@@ -22,7 +22,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 
 	}
 
-	onDidReceiveSettings(ev: DidReceiveSettingsEvent<PythonScriptSettings>): Promise<void> | void {
+	onDidReceiveSettings(ev: DidReceiveSettingsEvent<PythonServiceSettings>): Promise<void> | void {
 		const settings = ev.payload.settings;
 		if (settings.path){
 			if(settings.path.includes(".py")){
@@ -38,41 +38,47 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	 * and action information where applicable. In this example, our action will display a counter that increments by one each press. We track the current count on the action's persisted
 	 * settings using `setSettings` and `getSettings`.
 	 */
-	async onKeyDown(ev: KeyDownEvent<PythonScriptSettings>): Promise<void> {
-		// Update the count from the settings.
-		const settings = ev.payload.settings;
-		const { path } = settings;
-		if (path) {
-			
-			const pythonProcess = spawn('python', [path]);
-
-			pythonProcess.stdout.on('data', (data: { toString: () => string; }) => {
-				console.log(`stdout: ${data}`);
-				if(settings.displayValues){ev.action.setTitle(data.toString().trim());}
-				if(settings.image1 && (data.toString().trim() == (settings.value1?? ""))){
-					ev.action.setImage(settings.image1)
-					
-					
+	async onKeyDown(ev: KeyDownEvent<PythonServiceSettings>): Promise<void> {
+			// Update the count from the settings.
+			const settings = ev.payload.settings;
+			const { path } = settings;
+			if (path) {
+	
+				let pythonProcess: ChildProcess = spawn('python', [path]);
+	
+				while (pythonProcess.exitCode == null) {
+					pythonProcess.stdout!.on('data', (data: { toString: () => string; }) => {
+	
+						streamDeck.logger.debug(`stdout: ${data}`);
+						if (settings.displayValues) { ev.action.setTitle(data.toString().trim()); }
+						if (settings.image1 && (data.toString().trim() == (settings.value1 ?? ""))) {
+							ev.action.setImage(settings.image1)
+	
+	
+						}
+						if (settings.image2 && (data.toString().trim() == (settings.value2 ?? ""))) {
+							ev.action.setImage(settings.image2)
+	
+						}
+					});
+					await new Promise(resolve => setTimeout(resolve, 100));
+	
+	
+					pythonProcess.stderr!.on('data', (data: { toString: () => string; }) => {
+						console.error(`stderr: ${data}`);
+						ev.action.setTitle(data.toString().trim());
+	
+					});
+	
+					pythonProcess.on('close', (code: any) => {
+						console.log(`child process exited with code ${code}`);
+					});
 				}
-				if(settings.image2 && (data.toString().trim() == (settings.value2?? ""))){
-					ev.action.setImage(settings.image2)
-
-				}
-			});
-
-			pythonProcess.stderr.on('data', (data: { toString: () => string; }) => {
-				console.error(`stderr: ${data}`);
-				ev.action.setTitle(data.toString().trim());
-
-			});
-
-			pythonProcess.on('close', (code: any) => {
-				console.log(`child process exited with code ${code}`);
-			});
+			}
+	
+	
 		}
-
-
-	}
+	
 
 	getFileNameFromPath(path: string): string{
 		var fileName = "";
@@ -84,7 +90,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 /**
  * Settings for {@link PythonScript}.
  */
-type PythonScriptSettings = {
+type PythonServiceSettings = {
 	path?: string;
 	value1? : string;
 	image1? : string;
