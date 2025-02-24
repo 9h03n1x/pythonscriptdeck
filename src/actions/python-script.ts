@@ -1,4 +1,4 @@
-import { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
 import { ChildProcess, spawn } from "child_process";
 
 /**
@@ -13,10 +13,20 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	 */
 	onWillAppear(ev: WillAppearEvent<PythonScriptSettings>): void | Promise<void> {
 		const settings = ev.payload.settings;
-		if (settings.path){
-			if(settings.path.includes(".py")){
+		if (settings.path) {
+			if (settings.path.includes(".py")) {
 				ev.action.setImage("imgs/actions/pyFileCheck.png")
-				ev.action.setTitle(this.getFileNameFromPath(settings.path));
+				var venvname = "";
+				if(settings.useVenv && settings.venvPath){
+					streamDeck.logger.debug(settings.venvPath);
+					venvname = settings.venvPath.substring(0,settings.venvPath.lastIndexOf("/"));
+					streamDeck.logger.debug(venvname);
+					venvname = venvname.substring(venvname.lastIndexOf("/")+1, venvname.length)+"\n";
+					streamDeck.logger.debug(venvname);
+					venvname = `venv:\n ${venvname}`
+					
+				}
+				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
 			}
 		}
 
@@ -24,10 +34,20 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 
 	onDidReceiveSettings(ev: DidReceiveSettingsEvent<PythonScriptSettings>): Promise<void> | void {
 		const settings = ev.payload.settings;
-		if (settings.path){
-			if(settings.path.includes(".py")){
+		if (settings.path) {
+			if (settings.path.includes(".py")) {
 				ev.action.setImage("imgs/actions/pyFileCheck.png")
-				ev.action.setTitle(this.getFileNameFromPath(settings.path));
+				var venvname = "";
+				if(settings.useVenv && settings.venvPath){
+					streamDeck.logger.debug(settings.venvPath);
+					venvname = settings.venvPath.substring(0,settings.venvPath.lastIndexOf("/"));
+					streamDeck.logger.debug(venvname);
+					venvname = venvname.substring(venvname.lastIndexOf("/")+1, venvname.length)+"\n";
+					streamDeck.logger.debug(venvname);
+					venvname = `venv:\n ${venvname}`
+					
+				}
+				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
 			}
 		}
 	}
@@ -42,39 +62,48 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 		// Update the count from the settings.
 		const settings = ev.payload.settings;
 		const { path } = settings;
+		let pythonProcess: ChildProcess |undefined;
 		if (path) {
-			
-			const pythonProcess = spawn('python', [path]);
+			streamDeck.logger.debug(`path to script is: ${path}`)
+			if (settings.useVenv && settings.venvPath) {
+				streamDeck.logger.debug(`Use Virtual Environment: ${settings.venvPath}`)
+				pythonProcess = spawn("cmd.exe", ["/c", `call ${settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path}`]);
+				
+			}
+			else { pythonProcess = spawn("python", [path]); }
 
-			pythonProcess.stdout.on('data', (data: { toString: () => string; }) => {
-				console.log(`stdout: ${data}`);
-				if(settings.displayValues){ev.action.setTitle(data.toString().trim());}
-				if(settings.image1 && (data.toString().trim() == (settings.value1?? ""))){
-					ev.action.setImage(settings.image1)
-					
-					
-				}
-				if(settings.image2 && (data.toString().trim() == (settings.value2?? ""))){
-					ev.action.setImage(settings.image2)
+			if (pythonProcess != undefined && pythonProcess.stdout != null) {
+				streamDeck.logger.debug(`start reading output`);
+				pythonProcess.stdout.on('data', (data: { toString: () => string; }) => {
+					console.log(`stdout: ${data}`);
+					if (settings.displayValues) { ev.action.setTitle(data.toString().trim()); }
+					if (settings.image1 && (data.toString().trim() == (settings.value1 ?? ""))) {
+						ev.action.setImage(settings.image1)
 
-				}
-			});
 
-			pythonProcess.stderr.on('data', (data: { toString: () => string; }) => {
-				console.error(`stderr: ${data}`);
-				ev.action.setTitle(data.toString().trim());
+					}
+					if (settings.image2 && (data.toString().trim() == (settings.value2 ?? ""))) {
+						ev.action.setImage(settings.image2)
 
-			});
+					}
+				});
 
-			pythonProcess.on('close', (code: any) => {
-				console.log(`child process exited with code ${code}`);
-			});
+				pythonProcess.stderr!.on('data', (data: { toString: () => string; }) => {
+					console.error(`stderr: ${data}`);
+					ev.action.setTitle(data.toString().trim());
+
+				});
+
+				pythonProcess.on('close', (code: any) => {
+					console.log(`child process exited with code ${code}`);
+				});
+			}
 		}
 
 
 	}
 
-	getFileNameFromPath(path: string): string{
+	getFileNameFromPath(path: string): string {
 		var fileName = "";
 		fileName = path.substring(path.lastIndexOf("/") + 1);
 		return fileName;
@@ -86,10 +115,12 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
  */
 type PythonScriptSettings = {
 	path?: string;
-	value1? : string;
-	image1? : string;
-	value2? : string;
-	image2? : string;
+	value1?: string;
+	image1?: string;
+	value2?: string;
+	image2?: string;
 	displayValues: boolean;
+	useVenv: boolean;
+	venvPath?: string;
 
 };
