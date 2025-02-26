@@ -70,7 +70,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 				pythonProcess = spawn("cmd.exe", ["/c", `call ${settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path}`]);
 				
 			}
-			else { pythonProcess = spawn("python3", [path]); }
+			else { pythonProcess = spawn("python", [path]); }
 
 			if (pythonProcess != undefined && pythonProcess.stdout != null) {
 				streamDeck.logger.debug(`start reading output`);

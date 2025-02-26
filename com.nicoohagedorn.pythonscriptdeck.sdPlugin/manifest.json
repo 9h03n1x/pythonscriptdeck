@@ -1,6 +1,6 @@
 {
 	"Name": "PythonScriptDeck",
-	"Version": "0.3.0.1",
+	"Version": "0.3.0.2",
 	"Author": "nicoohagedorn",
 	"Actions": [
 		{
@@ -9,22 +9,6 @@
 			"Icon": "imgs/plugin/python",
 			"Tooltip": "Displays a count, which increments by one on press.",
 			"PropertyInspectorPath": "ui/python-script.html",
-			"Controllers": [
-				"Keypad"
-			],
-			"States": [
-				{
-					"Image": "imgs/plugin/python_color",
-					"TitleAlignment": "bottom"
-				}
-			]
-		},
-		{
-			"Name": "Run Service",
-			"UUID": "com.nicoohagedorn.pythonscriptdeck.service",
-			"Icon": "imgs/plugin/python",
-			"Tooltip": "Displays a count, which increments by one on press.",
-			"PropertyInspectorPath": "ui/python-service.html",
 			"Controllers": [
 				"Keypad"
 			],
