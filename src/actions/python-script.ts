@@ -70,12 +70,12 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 				pythonProcess = spawn("cmd.exe", ["/c", `call ${settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path}`]);
 				
 			}
-			else { pythonProcess = spawn("python", [path]); }
+			else { pythonProcess = spawn("python3", [path]); }
 
 			if (pythonProcess != undefined && pythonProcess.stdout != null) {
 				streamDeck.logger.debug(`start reading output`);
 				pythonProcess.stdout.on('data', (data: { toString: () => string; }) => {
-					console.log(`stdout: ${data}`);
+					streamDeck.logger.debug(`stdout: ${data}`);
 					if (settings.displayValues) { ev.action.setTitle(data.toString().trim()); }
 					if (settings.image1 && (data.toString().trim() == (settings.value1 ?? ""))) {
 						ev.action.setImage(settings.image1)
@@ -89,13 +89,17 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 				});
 
 				pythonProcess.stderr!.on('data', (data: { toString: () => string; }) => {
-					console.error(`stderr: ${data}`);
-					ev.action.setTitle(data.toString().trim());
+					streamDeck.logger.error(`stderr: ${data}`);
+					if(data.toString().includes("taxError")){
+						ev.action.setTitle("Python\nSyntax\nError");
+					}else{
+					ev.action.setTitle("python\nissue");}
+					ev.action.showAlert();
 
 				});
 
 				pythonProcess.on('close', (code: any) => {
-					console.log(`child process exited with code ${code}`);
+					streamDeck.logger.info(`child process exited with code ${code}`);
 				});
 			}
 		}
