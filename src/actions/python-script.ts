@@ -1,10 +1,13 @@
 import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
 import { ChildProcess, spawn } from "child_process";
+import { error } from "console";
+import { regex } from "regex";
+
 
 /**
  * An example action class that displays a count that increments by one each time the button is pressed.
  */
-@action({ UUID: "com.nicoohagedorn.pythonscriptdeck.script" })
+@action({ UUID: "com.niccohagedorn.pythonscriptdeck.script" })
 export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	/**
 	 * The {@link SingletonAction.onWillAppear} event is useful for setting the visual representation of an action when it becomes visible. This could be due to the Stream Deck first
@@ -14,17 +17,17 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	onWillAppear(ev: WillAppearEvent<PythonScriptSettings>): void | Promise<void> {
 		const settings = ev.payload.settings;
 		if (settings.path) {
-			if (settings.path.includes(".py")) {
+			if (settings.path.search(".py")) {
 				ev.action.setImage("imgs/actions/pyFileCheck.png")
 				var venvname = "";
-				if(settings.useVenv && settings.venvPath){
-					streamDeck.logger.debug(settings.venvPath);
-					venvname = settings.venvPath.substring(0,settings.venvPath.lastIndexOf("/"));
-					streamDeck.logger.debug(venvname);
-					venvname = venvname.substring(venvname.lastIndexOf("/")+1, venvname.length)+"\n";
-					streamDeck.logger.debug(venvname);
+				if (settings.useVenv && settings.venvPath) {
+					streamDeck.logger.info(settings.venvPath);
+					venvname = settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"));
+					streamDeck.logger.info(venvname);
+					venvname = venvname.substring(venvname.lastIndexOf("/") + 1, venvname.length) + "\n";
+					streamDeck.logger.info(venvname);
 					venvname = `venv:\n ${venvname}`
-					
+
 				}
 				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
 			}
@@ -35,17 +38,17 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	onDidReceiveSettings(ev: DidReceiveSettingsEvent<PythonScriptSettings>): Promise<void> | void {
 		const settings = ev.payload.settings;
 		if (settings.path) {
-			if (settings.path.includes(".py")) {
+			if (settings.path.search(".py")) {
 				ev.action.setImage("imgs/actions/pyFileCheck.png")
 				var venvname = "";
-				if(settings.useVenv && settings.venvPath){
-					streamDeck.logger.debug(settings.venvPath);
-					venvname = settings.venvPath.substring(0,settings.venvPath.lastIndexOf("/"));
-					streamDeck.logger.debug(venvname);
-					venvname = venvname.substring(venvname.lastIndexOf("/")+1, venvname.length)+"\n";
-					streamDeck.logger.debug(venvname);
+				if (settings.useVenv && settings.venvPath) {
+					streamDeck.logger.info(settings.venvPath);
+					venvname = settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"));
+					streamDeck.logger.info(venvname);
+					venvname = venvname.substring(venvname.lastIndexOf("/") + 1, venvname.length) + "\n";
+					streamDeck.logger.info(venvname);
 					venvname = `venv:\n ${venvname}`
-					
+
 				}
 				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
 			}
@@ -62,38 +65,86 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 		// Update the count from the settings.
 		const settings = ev.payload.settings;
 		const { path } = settings;
-		let pythonProcess: ChildProcess |undefined;
+		let pythonProcess: ChildProcess | undefined;
 		if (path) {
-			streamDeck.logger.debug(`path to script is: ${path}`)
-			if (settings.useVenv && settings.venvPath) {
-				streamDeck.logger.debug(`Use Virtual Environment: ${settings.venvPath}`)
-				pythonProcess = spawn("cmd.exe", ["/c", `call ${settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path}`]);
-				
-			}
-			else { pythonProcess = spawn("python", [path]); }
+			streamDeck.logger.info(`path to script is: ${path}`)
+			pythonProcess = this.createChildProcess(settings.useVenv, settings.venvPath, path);
 
 			if (pythonProcess != undefined && pythonProcess.stdout != null) {
-				streamDeck.logger.debug(`start reading output`);
+				streamDeck.logger.info(`start reading output`);
 				pythonProcess.stdout.on('data', (data: { toString: () => string; }) => {
-					streamDeck.logger.debug(`stdout: ${data}`);
+					streamDeck.logger.info(`stdout: ${data}`);
 					if (settings.displayValues) { ev.action.setTitle(data.toString().trim()); }
 					if (settings.image1 && (data.toString().trim() == (settings.value1 ?? ""))) {
 						ev.action.setImage(settings.image1)
-
-
 					}
 					if (settings.image2 && (data.toString().trim() == (settings.value2 ?? ""))) {
 						ev.action.setImage(settings.image2)
 
-					}
+					}else(
+						ev.action.setImage("imgs/actions/pyFileCheck.png")
+					)
 				});
 
 				pythonProcess.stderr!.on('data', (data: { toString: () => string; }) => {
-					streamDeck.logger.error(`stderr: ${data}`);
-					if(data.toString().includes("taxError")){
+					const errorString = data.toString().trim().replace(RegExp('/(?:\r\n|\r|\n)/g'), ' ');
+					streamDeck.logger.error(`stderr: ${errorString}`);
+					ev.action.setImage("imgs/actions/pyFilecheckFailed.png");
+
+					//TODO clean this up - works for now
+			
+					if (errorString.search("SyntaxError") > -1) {
 						ev.action.setTitle("Python\nSyntax\nError");
-					}else{
-					ev.action.setTitle("python\nissue");}
+					}
+					else if (errorString.search("NameError") > -1) {
+						ev.action.setTitle("Python\nName\nError");
+					}
+					else if (errorString.search("TypeError") > -1) {
+						ev.action.setTitle("Python\nType\nError");
+					}
+					else if (errorString.search("ValueError") > -1) {
+						ev.action.setTitle("Python\nValue\nError");
+					}
+					else if (errorString.search("ZeroDivisionError") > -1) {
+						ev.action.setTitle("Python\nZero\nError");
+					}
+					else if (errorString.search("IndexError") > -1) {
+						ev.action.setTitle("Python\nIndex\nError");
+					}
+					else if (errorString.search("KeyError") > -1) {
+						ev.action.setTitle("Python\nKey\nError");
+					}
+					else if (errorString.search("AttributeError") > -1) {
+						ev.action.setTitle("Python\nAttribute\nError");
+					}
+					else if (errorString.search("ImportError") > -1) {
+						ev.action.setTitle("Python\nImport\nError");
+					}
+					else if (errorString.search("FileNotFoundError") > -1) {
+						ev.action.setTitle("Python\nFile\nError");
+					}
+					else if (errorString.search("ModuleNotFoundError") > -1) {
+						ev.action.setTitle("Python\nModule\nError");
+					}
+					else if (errorString.search("RuntimeError") > -1) {
+						ev.action.setTitle("Python\nRuntime\nError");
+					}
+					else if (errorString.search("MemoryError") > -1) {
+						ev.action.setTitle("Python\nMemory\nError");
+					}
+					else if (errorString.search("OverflowError") > -1) {
+						ev.action.setTitle("Python\nOverflow\nError");
+					}
+					else if (errorString.search("SystemError") > -1) {
+						ev.action.setTitle("Python\nSystem\nError");
+					}
+					else if (errorString.search("Microsoft Store") > -1) {
+						ev.action.setTitle("Python\nnot found\nError");
+					}
+					else {
+						streamDeck.logger.error(errorString);
+						ev.action.setTitle("python\nother\nissue");
+					}
 					ev.action.showAlert();
 
 				});
@@ -105,6 +156,23 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 		}
 
 
+	}
+
+	createChildProcess(useVenv: boolean, venvPath: string | undefined, path: string) {
+		let pythonProcess: ChildProcess | undefined;
+		if (useVenv && venvPath) {
+			streamDeck.logger.info(`Use Virtual Environment: ${venvPath}`)
+			pythonProcess = spawn("cmd.exe", ["/c", `call ${venvPath.substring(0, venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path}`]);
+
+		}
+		else {
+			pythonProcess = spawn("python3", [path]);
+			if (pythonProcess.connected == false){
+				streamDeck.logger.info("python3 not found, trying python")
+				pythonProcess = spawn("python", [path]);
+			}
+		}
+		return pythonProcess;
 	}
 
 	getFileNameFromPath(path: string): string {
