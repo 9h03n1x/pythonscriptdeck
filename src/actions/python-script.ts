@@ -106,7 +106,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 						ev.action.setTitle("Python\nValue\nError");
 					}
 					else if (errorString.search("ZeroDivisionError") > -1) {
-						ev.action.setTitle("Python\nZero\nError");
+						ev.action.setTitle("Python\nZeroDiv\nError");
 					}
 					else if (errorString.search("IndexError") > -1) {
 						ev.action.setTitle("Python\nIndex\nError");
@@ -120,7 +120,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 					else if (errorString.search("ImportError") > -1) {
 						ev.action.setTitle("Python\nImport\nError");
 					}
-					else if (errorString.search("FileNotFoundError") > -1) {
+					else if (errorString.search("No such file or directory") > -1) {
 						ev.action.setTitle("Python\nFile\nError");
 					}
 					else if (errorString.search("ModuleNotFoundError") > -1) {
