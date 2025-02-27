@@ -5,8 +5,28 @@ import { regex } from "regex";
 
 
 /**
- * An example action class that displays a count that increments by one each time the button is pressed.
+ * Error mapping for python errors
  */
+const pythonErrorMap: { [key: string]: string } = {
+	"SyntaxError": "Python\nSyntax\nError",
+	"NameError": "Python\nName\nError",
+	"TypeError": "Python\nType\nError",
+	"ValueError": "Python\nValue\nError",
+	"ZeroDivisionError": "Python\nZeroDiv\nError",
+	"IndexError": "Python\nIndex\nError",
+	"KeyError": "Python\nKey\nError",
+	"AttributeError": "Python\nAttribute\nError",
+	"ImportError": "Python\nImport\nError",
+	"No such file or directory": "Python\nFile\nError",
+	"ModuleNotFoundError": "Python\nModule\nError",
+	"RuntimeError": "Python\nRuntime\nError",
+	"MemoryError": "Python\nMemory\nError",
+	"OverflowError": "Python\nOverflow\nError",
+	"SystemError": "Python\nSystem\nError",
+	"Microsoft Store": "Python\nnot found\nError",
+	
+};
+
 @action({ UUID: "com.niccohagedorn.pythonscriptdeck.script" })
 export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	/**
@@ -90,61 +110,17 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 					const errorString = data.toString().trim().replace(RegExp('/(?:\r\n|\r|\n)/g'), ' ');
 					streamDeck.logger.error(`stderr: ${errorString}`);
 					ev.action.setImage("imgs/actions/pyFilecheckFailed.png");
-
-					//TODO clean this up - works for now
-			
-					if (errorString.search("SyntaxError") > -1) {
-						ev.action.setTitle("Python\nSyntax\nError");
+					let errorTitle = "python\nother\nissue";
+					for (const key in pythonErrorMap) {
+						if (errorString.search(key) > -1) {
+							errorTitle = pythonErrorMap[key];
+							break;
+						}
 					}
-					else if (errorString.search("NameError") > -1) {
-						ev.action.setTitle("Python\nName\nError");
-					}
-					else if (errorString.search("TypeError") > -1) {
-						ev.action.setTitle("Python\nType\nError");
-					}
-					else if (errorString.search("ValueError") > -1) {
-						ev.action.setTitle("Python\nValue\nError");
-					}
-					else if (errorString.search("ZeroDivisionError") > -1) {
-						ev.action.setTitle("Python\nZeroDiv\nError");
-					}
-					else if (errorString.search("IndexError") > -1) {
-						ev.action.setTitle("Python\nIndex\nError");
-					}
-					else if (errorString.search("KeyError") > -1) {
-						ev.action.setTitle("Python\nKey\nError");
-					}
-					else if (errorString.search("AttributeError") > -1) {
-						ev.action.setTitle("Python\nAttribute\nError");
-					}
-					else if (errorString.search("ImportError") > -1) {
-						ev.action.setTitle("Python\nImport\nError");
-					}
-					else if (errorString.search("No such file or directory") > -1) {
-						ev.action.setTitle("Python\nFile\nError");
-					}
-					else if (errorString.search("ModuleNotFoundError") > -1) {
-						ev.action.setTitle("Python\nModule\nError");
-					}
-					else if (errorString.search("RuntimeError") > -1) {
-						ev.action.setTitle("Python\nRuntime\nError");
-					}
-					else if (errorString.search("MemoryError") > -1) {
-						ev.action.setTitle("Python\nMemory\nError");
-					}
-					else if (errorString.search("OverflowError") > -1) {
-						ev.action.setTitle("Python\nOverflow\nError");
-					}
-					else if (errorString.search("SystemError") > -1) {
-						ev.action.setTitle("Python\nSystem\nError");
-					}
-					else if (errorString.search("Microsoft Store") > -1) {
-						ev.action.setTitle("Python\nnot found\nError");
-					}
-					else {
+					if (errorTitle == "python\nother\nissue"){
 						streamDeck.logger.error(errorString);
-						ev.action.setTitle("python\nother\nissue");
 					}
+					ev.action.setTitle(errorTitle);
 					ev.action.showAlert();
 
 				});
