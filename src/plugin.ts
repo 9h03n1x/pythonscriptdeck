@@ -8,7 +8,7 @@ streamDeck.logger.setLevel(LogLevel.INFO);
 
 // Register the increment action.
 streamDeck.actions.registerAction(new PythonScript());
-streamDeck.actions.registerAction(new PythonService());
+//streamDeck.actions.registerAction(new PythonService());
 
 // Finally, connect to the Stream Deck.
 streamDeck.connect();
