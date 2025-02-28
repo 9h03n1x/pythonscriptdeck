@@ -1,9 +1,32 @@
 import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
 import { ChildProcess, spawn } from "child_process";
+import { error } from "console";
+import { regex } from "regex";
+
 
 /**
- * An example action class that displays a count that increments by one each time the button is pressed.
+ * Error mapping for python errors
  */
+const pythonErrorMap: { [key: string]: string } = {
+	"SyntaxError": "Python\nSyntax\nError",
+	"NameError": "Python\nName\nError",
+	"TypeError": "Python\nType\nError",
+	"ValueError": "Python\nValue\nError",
+	"ZeroDivisionError": "Python\nZeroDiv\nError",
+	"IndexError": "Python\nIndex\nError",
+	"KeyError": "Python\nKey\nError",
+	"AttributeError": "Python\nAttribute\nError",
+	"ImportError": "Python\nImport\nError",
+	"No such file or directory": "Python\nFile\nError",
+	"ModuleNotFoundError": "Python\nModule\nError",
+	"RuntimeError": "Python\nRuntime\nError",
+	"MemoryError": "Python\nMemory\nError",
+	"OverflowError": "Python\nOverflow\nError",
+	"SystemError": "Python\nSystem\nError",
+	"Microsoft Store": "Python\nnot found\nError",
+	
+};
+
 @action({ UUID: "com.nicoohagedorn.pythonscriptdeck.script" })
 export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	/**
@@ -14,17 +37,17 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	onWillAppear(ev: WillAppearEvent<PythonScriptSettings>): void | Promise<void> {
 		const settings = ev.payload.settings;
 		if (settings.path) {
-			if (settings.path.includes(".py")) {
+			if (settings.path.search(".py")) {
 				ev.action.setImage("imgs/actions/pyFileCheck.png")
 				var venvname = "";
-				if(settings.useVenv && settings.venvPath){
-					streamDeck.logger.debug(settings.venvPath);
-					venvname = settings.venvPath.substring(0,settings.venvPath.lastIndexOf("/"));
-					streamDeck.logger.debug(venvname);
-					venvname = venvname.substring(venvname.lastIndexOf("/")+1, venvname.length)+"\n";
-					streamDeck.logger.debug(venvname);
+				if (settings.useVenv && settings.venvPath) {
+					streamDeck.logger.info(settings.venvPath);
+					venvname = settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"));
+					streamDeck.logger.info(venvname);
+					venvname = venvname.substring(venvname.lastIndexOf("/") + 1, venvname.length) + "\n";
+					streamDeck.logger.info(venvname);
 					venvname = `venv:\n ${venvname}`
-					
+
 				}
 				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
 			}
@@ -35,17 +58,17 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	onDidReceiveSettings(ev: DidReceiveSettingsEvent<PythonScriptSettings>): Promise<void> | void {
 		const settings = ev.payload.settings;
 		if (settings.path) {
-			if (settings.path.includes(".py")) {
+			if (settings.path.search(".py")) {
 				ev.action.setImage("imgs/actions/pyFileCheck.png")
 				var venvname = "";
-				if(settings.useVenv && settings.venvPath){
-					streamDeck.logger.debug(settings.venvPath);
-					venvname = settings.venvPath.substring(0,settings.venvPath.lastIndexOf("/"));
-					streamDeck.logger.debug(venvname);
-					venvname = venvname.substring(venvname.lastIndexOf("/")+1, venvname.length)+"\n";
-					streamDeck.logger.debug(venvname);
+				if (settings.useVenv && settings.venvPath) {
+					streamDeck.logger.info(settings.venvPath);
+					venvname = settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"));
+					streamDeck.logger.info(venvname);
+					venvname = venvname.substring(venvname.lastIndexOf("/") + 1, venvname.length) + "\n";
+					streamDeck.logger.info(venvname);
 					venvname = `venv:\n ${venvname}`
-					
+
 				}
 				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
 			}
@@ -62,38 +85,42 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 		// Update the count from the settings.
 		const settings = ev.payload.settings;
 		const { path } = settings;
-		let pythonProcess: ChildProcess |undefined;
+		let pythonProcess: ChildProcess | undefined;
 		if (path) {
-			streamDeck.logger.debug(`path to script is: ${path}`)
-			if (settings.useVenv && settings.venvPath) {
-				streamDeck.logger.debug(`Use Virtual Environment: ${settings.venvPath}`)
-				pythonProcess = spawn("cmd.exe", ["/c", `call ${settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path}`]);
-				
-			}
-			else { pythonProcess = spawn("python3", [path]); }
+			streamDeck.logger.info(`path to script is: ${path}`)
+			pythonProcess = this.createChildProcess(settings.useVenv, settings.venvPath, path);
 
 			if (pythonProcess != undefined && pythonProcess.stdout != null) {
-				streamDeck.logger.debug(`start reading output`);
+				streamDeck.logger.info(`start reading output`);
 				pythonProcess.stdout.on('data', (data: { toString: () => string; }) => {
-					streamDeck.logger.debug(`stdout: ${data}`);
+					streamDeck.logger.info(`stdout: ${data}`);
 					if (settings.displayValues) { ev.action.setTitle(data.toString().trim()); }
 					if (settings.image1 && (data.toString().trim() == (settings.value1 ?? ""))) {
 						ev.action.setImage(settings.image1)
-
-
 					}
 					if (settings.image2 && (data.toString().trim() == (settings.value2 ?? ""))) {
 						ev.action.setImage(settings.image2)
 
-					}
+					}else(
+						ev.action.setImage("imgs/actions/pyFileCheck.png")
+					)
 				});
 
 				pythonProcess.stderr!.on('data', (data: { toString: () => string; }) => {
-					streamDeck.logger.error(`stderr: ${data}`);
-					if(data.toString().includes("taxError")){
-						ev.action.setTitle("Python\nSyntax\nError");
-					}else{
-					ev.action.setTitle("python\nissue");}
+					const errorString = data.toString().trim().replace(RegExp('/(?:\r\n|\r|\n)/g'), ' ');
+					streamDeck.logger.error(`stderr: ${errorString}`);
+					ev.action.setImage("imgs/actions/pyFilecheckFailed.png");
+					let errorTitle = "python\nother\nissue";
+					for (const key in pythonErrorMap) {
+						if (errorString.search(key) > -1) {
+							errorTitle = pythonErrorMap[key];
+							break;
+						}
+					}
+					if (errorTitle == "python\nother\nissue"){
+						streamDeck.logger.error(errorString);
+					}
+					ev.action.setTitle(errorTitle);
 					ev.action.showAlert();
 
 				});
@@ -105,6 +132,23 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 		}
 
 
+	}
+
+	createChildProcess(useVenv: boolean, venvPath: string | undefined, path: string) {
+		let pythonProcess: ChildProcess | undefined;
+		if (useVenv && venvPath) {
+			streamDeck.logger.info(`Use Virtual Environment: ${venvPath}`)
+			pythonProcess = spawn("cmd.exe", ["/c", `call ${venvPath.substring(0, venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path}`]);
+
+		}
+		else {
+			pythonProcess = spawn("python3", [path]);
+			if (pythonProcess.connected == false){
+				streamDeck.logger.info("python3 not found, trying python")
+				pythonProcess = spawn("python", [path]);
+			}
+		}
+		return pythonProcess;
 	}
 
 	getFileNameFromPath(path: string): string {
