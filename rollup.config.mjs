@@ -6,7 +6,7 @@ import path from "node:path";
 import url from "node:url";
 
 const isWatching = !!process.env.ROLLUP_WATCH;
-const sdPlugin = "com.niccohagedorn.pythonscriptdeck.sdPlugin";
+const sdPlugin = "com.nicoohagedorn.pythonscriptdeck.sdPlugin";
 
 /**
  * @type {import('rollup').RollupOptions}

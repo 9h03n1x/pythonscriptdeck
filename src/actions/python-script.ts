@@ -27,7 +27,7 @@ const pythonErrorMap: { [key: string]: string } = {
 	
 };
 
-@action({ UUID: "com.niccohagedorn.pythonscriptdeck.script" })
+@action({ UUID: "com.nicoohagedorn.pythonscriptdeck.script" })
 export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	/**
 	 * The {@link SingletonAction.onWillAppear} event is useful for setting the visual representation of an action when it becomes visible. This could be due to the Stream Deck first

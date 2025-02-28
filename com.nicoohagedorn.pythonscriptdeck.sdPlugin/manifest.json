@@ -1,11 +1,11 @@
 {
 	"Name": "PythonScriptDeck",
 	"Version": "0.3.0.3",
-	"Author": "niccohagedorn",
+	"Author": "nicoohagedorn",
 	"Actions": [
 		{
 			"Name": "Run Script",
-			"UUID": "com.niccohagedorn.pythonscriptdeck.script",
+			"UUID": "com.nicoohagedorn.pythonscriptdeck.script",
 			"Icon": "imgs/plugin/python",
 			"Tooltip": "Displays a count, which increments by one on press.",
 			"PropertyInspectorPath": "ui/python-script.html",
@@ -43,5 +43,5 @@
 		"Version": "20",
 		"Debug": "enabled"
 	},
-	"UUID": "com.niccohagedorn.pythonscriptdeck"
+	"UUID": "com.nicoohagedorn.pythonscriptdeck"
 }

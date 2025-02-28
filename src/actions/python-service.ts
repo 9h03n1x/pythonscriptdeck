@@ -4,7 +4,7 @@ import { ChildProcess, spawn } from "child_process";
 /**
  * An example action class that displays a count that increments by one each time the button is pressed.
  */
-@action({ UUID: "com.niccohagedorn.pythonscriptdeck.service" })
+@action({ UUID: "com.nicoohagedorn.pythonscriptdeck.service" })
 export class PythonService extends SingletonAction<PythonServiceSettings> {
 	/**
 	 * The {@link SingletonAction.onWillAppear} event is useful for setting the visual representation of an action when it becomes visible. This could be due to the Stream Deck first

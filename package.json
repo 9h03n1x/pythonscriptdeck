@@ -1,7 +1,7 @@
 {
 	"scripts": {
 		"build": "rollup -c",
-		"watch": "rollup -c -w --watch.onEnd=\"streamdeck restart com.niccohagedorn.pythonscriptdeck\""
+		"watch": "rollup -c -w --watch.onEnd=\"streamdeck restart com.nicoohagedorn.pythonscriptdeck\""
 	},
 	"type": "module",
 	"devDependencies": {
