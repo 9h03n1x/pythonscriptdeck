@@ -5,13 +5,74 @@
     <title>Run Python Script</title>
     <meta charset="utf-8" />
     <script src="https://cdn.jsdelivr.net/gh/geekyeggo/sdpi-components@v3/dist/sdpi-components.js"></script>
+    <script>
+        function showExampleDialog() {
+            htmlContent = "This plugin allows you to run python scripts.<br><b>Example Script:</b><br><pre>import random\n# A function that will return either\n# 'True' or 'False' randomly\n# Replace this with your code and\n# return your desired values\n\ndef random_bool():\nreturn random.choice([True, False])\n\n# excute the function and print the\n# return value.\n# The plugin will then parse the\n# return value and react\n# so put in 'True' or 'False' into\n# the field return value.\n\nif __name__ == '__main__':\n    print(random_bool())"
+            title = "Example Python Script"
+            // Create a modal dialog container
+            const dialog = document.createElement("div");
+            dialog.style.position = "fixed";
+            dialog.style.top = "50%";
+            dialog.style.left = "50%";
+            dialog.style.transform = "translate(-50%, -50%)";
+            dialog.style.backgroundColor = "white";
+            dialog.style.border = "1px solid # ccc";
+            dialog.style.padding = "20px";
+            dialog.style.zIndex = "1000"; // Ensure it's on top
+            dialog.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
+            dialog.style.width = "80%"; // Adjust as needed
+            dialog.style.maxWidth = "600px";
+
+            // Create the title bar
+            const titleBar = document.createElement("div");
+            titleBar.style.marginBottom = "10px";
+            titleBar.style.fontWeight = "bold";
+            titleBar.textContent = title;
+
+            // Create the HTML content area
+            const contentArea = document.createElement("div");
+            contentArea.innerHTML = htmlContent;
+
+            // Create the close button
+            const closeButton = document.createElement("button");
+            closeButton.textContent = "Close";
+            closeButton.style.marginTop = "15px";
+            closeButton.addEventListener("click", () => {
+                document.body.removeChild(dialog);
+                if (overlay) {
+                    document.body.removeChild(overlay);
+                }
+            });
+
+            // Append elements to the dialog
+            dialog.appendChild(titleBar);
+            dialog.appendChild(contentArea);
+            dialog.appendChild(closeButton);
+
+            //create overlay
+            const overlay = document.createElement("div");
+            overlay.style.position = "fixed";
+            overlay.style.top = "0";
+            overlay.style.left = "0";
+            overlay.style.width = "100%";
+            overlay.style.height = "100%";
+            overlay.style.backgroundColor = "rgba(0,0,0,0.5)";
+            overlay.style.zIndex = "999";
+
+            // Append the dialog to the body
+            document.body.appendChild(overlay);
+            document.body.appendChild(dialog);
+        }
+
+
+    </script>
 </head>
 
 <body>
     <!--
         Learn more about property inspector components at https://sdpi-components.dev/docs/components
     -->
-    
+
     <sdpi-item label="Path to Script">
         <sdpi-file setting="path" accept="text/py"></sdpi-file>
     </sdpi-item>
@@ -25,50 +86,21 @@
         <sdpi-file setting="venvPath" accept="text/cfg"></sdpi-file>
     </sdpi-item>
     <sdpi-item label="return Value 1">
-        <sdpi-textfield
-        setting="value1"
-        pattern="/^[a-z ,.'-]+$/i"
-        placeholder="first value"
-        required>
+        <sdpi-textfield setting="value1" pattern="/^[a-z ,.'-]+$/i" placeholder="first value as string">
     </sdpi-item>
     <sdpi-item label="display Image for Value 1">
         <sdpi-file setting="image1" accept="image/png, image/jpeg, image/gif"></sdpi-file>
     </sdpi-item>
     <sdpi-item label="return Value 2">
-        <sdpi-textfield
-        setting="value2"
-        pattern="/^[a-z ,.'-]+$/i"
-        placeholder="second value"
-        >
+        <sdpi-textfield setting="value2" pattern="/^[a-z ,.'-]+$/i" placeholder="second value as string">
     </sdpi-item>
     <sdpi-item label="display Image for Value 2">
         <sdpi-file setting="image2" accept="image/png, image/jpeg, image/gif"></sdpi-file>
     </sdpi-item>
-
-    <sdpi-item label="Example">
-        <Details>
-            This plugin allows you to run python scripts.
-            <br>
-            <b>Example Script:</b>
-            <br>
-            <pre>
-import random
-
-#A function that will return either True or False randomly
-#Replace this with your code and return your desired values
-
-def random_bool():
-return random.choice([True, False])
-
-#excute the function and print the return value
-#the plugin will then parse the return value and react
-#so put in "True" or "False" in to the field return value.
-
-if __name__ == "__main__":
-    print(random_bool())
-
-            </pre>
-        </Details>
+    <sdpi-item>
+        <sdpi-button onclick="javascript:showExampleDialog()" label="Open Folder" id="openFolder">
+            Example Python Script
+        </sdpi-button>
     </sdpi-item>
 </body>
 
