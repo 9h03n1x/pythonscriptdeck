@@ -57,8 +57,10 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 	}
 
 	onWillDisappear(ev: WillDisappearEvent<PythonServiceSettings>): Promise<void> | void {
+		streamDeck.logger.info("onWillDisappear - unregister Action");
 		pyBGService.unregisterAction(ev);
 	}
+
 
 	/**
 	 * Listens for the {@link SingletonAction.onKeyDown} event which is emitted by Stream Deck when an action is pressed. Stream Deck provides various events for tracking interaction
@@ -68,42 +70,8 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 	 */
 	async onKeyDown(ev: KeyDownEvent<PythonServiceSettings>): Promise<void> {
 			// Update the count from the settings.
-			const settings = ev.payload.settings;
-			const { path } = settings;
-			if (path) {
-	
-				let pythonProcess: ChildProcess = spawn('python', [path]);
-	
-				while (pythonProcess.exitCode == null) {
-					pythonProcess.stdout!.on('data', (data: { toString: () => string; }) => {
-	
-						streamDeck.logger.debug(`stdout: ${data}`);
-						if (settings.displayValues) { ev.action.setTitle(data.toString().trim()); }
-						if (settings.image1 && (data.toString().trim() == (settings.value1 ?? ""))) {
-							ev.action.setImage(settings.image1)
-	
-	
-						}
-						if (settings.image2 && (data.toString().trim() == (settings.value2 ?? ""))) {
-							ev.action.setImage(settings.image2)
-	
-						}
-					});
-					await new Promise(resolve => setTimeout(resolve, 100));
-	
-	
-					pythonProcess.stderr!.on('data', (data: { toString: () => string; }) => {
-						console.error(`stderr: ${data}`);
-						ev.action.setTitle(data.toString().trim());
-	
-					});
-	
-					pythonProcess.on('close', (code: any) => {
-						console.log(`child process exited with code ${code}`);
-					});
-				}
-			}
-	
+			//TODO - enable start and stop the running of this script
+			pyBGService.getState() == 1 ? pyBGService.start(ev) : pyBGService.stop(ev);
 	
 		}
 	

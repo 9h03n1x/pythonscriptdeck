@@ -30,7 +30,13 @@
 			],
 			"States": [
 				{
-					"Image": "imgs/plugin/python_color",
+					"Name": "Running",
+					"Image": "imgs/actions/pyServiceRunning",
+					"TitleAlignment": "bottom"
+				},
+				{	
+					"Name": "Stopped",
+					"Image": "imgs/actions/pyServiceStopped",
 					"TitleAlignment": "bottom"
 				}
 			]

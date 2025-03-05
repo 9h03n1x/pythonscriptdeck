@@ -24,22 +24,24 @@ const pythonErrorMap: { [key: string]: string } = {
 	"Microsoft Store": "Python\nnot found\nError",
 	
 };
+enum ServiceState {
+	running,
+	stopped
+}
 
 
 class PythonBackgroundService {
 
     trackedActions: any[] = [];
+	state = ServiceState.stopped;
+
 
     registerAction(ev: WillAppearEvent<PythonServiceSettings> | DidReceiveSettingsEvent<PythonServiceSettings>) {
-        const interval = ev.payload.settings.interval ?? 10
+        
         var duplicate = false;
         streamDeck.logger.info("checking if action is already tracked");
         var newtrackedAction = {
-            "id": ev.action.id, "ev": ev, "timer": setInterval(() => {
-                streamDeck.logger.info(`timer triggered after ${ev.payload.settings.interval}s for action ${ev.action.manifestId}`)
-                this.executeAction(ev);
-                
-            }, interval*1000)
+            "id": ev.action.id, "ev": ev, "timer": undefined
         }
 
         for (let i = 0; i < this.trackedActions.length; i++) {
@@ -59,21 +61,37 @@ class PythonBackgroundService {
     unregisterAction(ev: WillDisappearEvent<PythonServiceSettings>) {
 		for (let i = 0; i < this.trackedActions.length; i++) {
             if (this.trackedActions[i] == ev.action.id) {
-                streamDeck.logger.info("action already tracked - updating action");
+                streamDeck.logger.info(`stopping execution of the action ${ev.action.manifestId}, id: ${ev.action.id}`);
                 clearInterval(this.trackedActions[i].timer.id);}
 			}
 	}
 
-    start(){
+    start(ev: KeyDownEvent<PythonServiceSettings>){
         streamDeck.logger.info("starting Background Service")
+		for (let i = 0; i < this.trackedActions.length; i++) {
+            this.trackedActions[i].timer = this.createTimer(this.trackedActions[i].ev);
+        }
+		this.state = ServiceState.running;
+		ev.action.setImage("imgs/actions/pyServiceRunning.png");
     }
 
-    stop(){
+    stop(ev: KeyDownEvent<PythonServiceSettings>){
         streamDeck.logger.info("stopping Background Service")
 		for (let i = 0; i < this.trackedActions.length; i++) {
-            clearInterval( this.trackedActions[i].timer.id);
+			if(this.trackedActions[i].timer == undefined){
+				continue;
+			}else{clearInterval( this.trackedActions[i].timer.id);}
+            
+			this.trackedActions[i].timer = undefined;
         }
+		this.state = ServiceState.stopped;
+		streamDeck.logger.info(`stopping execution of the action ${ev.action.manifestId}, id: ${ev.action.id}`)
+		ev.action.setImage("imgs/actions/pyServiceStopped.png");
     }
+
+	getState = () => {
+		return this.state;
+	}
 
     
 
@@ -82,18 +100,18 @@ class PythonBackgroundService {
 		const { path } = settings;
 		let pythonProcess: ChildProcess | undefined;
 		if (path) {
-			streamDeck.logger.info(`path to script is: ${path}`)
+			streamDeck.logger.debug(`path to script is: ${path}`)
 			pythonProcess = this.createChildProcess(settings.useVenv, settings.venvPath, path);
 
 			if (pythonProcess != undefined && pythonProcess.stdout != null) {
-				streamDeck.logger.info(`start reading output`);
+				streamDeck.logger.debug(`start reading output`);
 				pythonProcess.stdout.on('data', (data: { toString: () => string; }) => {
 					streamDeck.logger.info(`stdout: ${data}`);
 					if (settings.displayValues) { ev.action.setTitle(data.toString().trim()); }
 					if (settings.image1 && (data.toString().trim() == (settings.value1 ?? ""))) {
 						ev.action.setImage(settings.image1)
 					}
-					if (settings.image2 && (data.toString().trim() == (settings.value2 ?? ""))) {
+					else if (settings.image2 && (data.toString().trim() == (settings.value2 ?? ""))) {
 						ev.action.setImage(settings.image2)
 
 					}else(
@@ -121,7 +139,7 @@ class PythonBackgroundService {
 				});
 
 				pythonProcess.on('close', (code: any) => {
-					streamDeck.logger.info(`child process exited with code ${code}`);
+					streamDeck.logger.debug(`child process exited with code ${code}`);
 				});
 			}
 		}
@@ -130,14 +148,14 @@ class PythonBackgroundService {
     createChildProcess(useVenv: boolean, venvPath: string | undefined, path: string) {
 		let pythonProcess: ChildProcess | undefined;
 		if (useVenv && venvPath) {
-			streamDeck.logger.info(`Use Virtual Environment: ${venvPath}`)
+			streamDeck.logger.debug(`Use Virtual Environment: ${venvPath}`)
 			pythonProcess = spawn("cmd.exe", ["/c", `call ${venvPath.substring(0, venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path}`]);
 
 		}
 		else {
 			pythonProcess = spawn("python3", [path]);
 			if (pythonProcess.connected == false){
-				streamDeck.logger.info("python3 not found, trying python")
+				streamDeck.logger.debug("python3 not found, trying python")
 				pythonProcess = spawn("python", [path]);
 			}
 		}
@@ -148,6 +166,15 @@ class PythonBackgroundService {
 		var fileName = "";
 		fileName = path.substring(path.lastIndexOf("/") + 1);
 		return fileName;
+	}
+
+	createTimer(ev:WillAppearEvent<PythonServiceSettings> | DidReceiveSettingsEvent<PythonServiceSettings> |KeyDownEvent<PythonServiceSettings> ){
+		const interval = ev.payload.settings.interval ?? 10
+		return setInterval(() => {
+			streamDeck.logger.info(`timer triggered after ${ev.payload.settings.interval}s for action ${ev.action.manifestId}, id: ${ev.action.id}`)
+			this.executeAction(ev);
+		}, interval*1000)
+
 	}
 
 
