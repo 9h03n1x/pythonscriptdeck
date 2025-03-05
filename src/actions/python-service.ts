@@ -1,4 +1,4 @@
-import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent, WillDisappearEvent } from "@elgato/streamdeck";
 import { ChildProcess, spawn } from "child_process";
 import { pyBGService } from "../python-bg-service";
 
@@ -54,6 +54,10 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 			}
 		}
 		pyBGService.registerAction(ev);
+	}
+
+	onWillDisappear(ev: WillDisappearEvent<PythonServiceSettings>): Promise<void> | void {
+		pyBGService.unregisterAction(ev);
 	}
 
 	/**

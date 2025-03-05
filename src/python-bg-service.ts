@@ -1,4 +1,4 @@
-import streamDeck, { DidReceiveSettingsEvent, KeyDownEvent, WillAppearEvent } from '@elgato/streamdeck';
+import streamDeck, { DidReceiveSettingsEvent, KeyDownEvent, WillAppearEvent, WillDisappearEvent } from '@elgato/streamdeck';
 import { PythonServiceSettings } from './actions/python-service';
 import { ChildProcess, spawn } from 'child_process';
 
@@ -43,12 +43,11 @@ class PythonBackgroundService {
         }
 
         for (let i = 0; i < this.trackedActions.length; i++) {
-            const element = this.trackedActions[i];
-            if (element.id == ev.action.id) {
+            if (this.trackedActions[i] == ev.action.id) {
                 duplicate = true;
                 streamDeck.logger.info("action already tracked - updating action");
-                clearInterval(element.timer.id);
-                this.trackedActions[this.trackedActions.indexOf(element)]= newtrackedAction;
+                clearInterval(this.trackedActions[i].timer.id);
+                this.trackedActions[this.trackedActions.indexOf(this.trackedActions[i])]= newtrackedAction;
                 break;
             }
             }
@@ -57,7 +56,13 @@ class PythonBackgroundService {
         this.trackedActions.push(newtrackedAction)}
     }
 
-    unregisterAction(ev: WillAppearEvent<PythonServiceSettings> | DidReceiveSettingsEvent<PythonServiceSettings>) { }
+    unregisterAction(ev: WillDisappearEvent<PythonServiceSettings>) {
+		for (let i = 0; i < this.trackedActions.length; i++) {
+            if (this.trackedActions[i] == ev.action.id) {
+                streamDeck.logger.info("action already tracked - updating action");
+                clearInterval(this.trackedActions[i].timer.id);}
+			}
+	}
 
     start(){
         streamDeck.logger.info("starting Background Service")
@@ -65,6 +70,9 @@ class PythonBackgroundService {
 
     stop(){
         streamDeck.logger.info("stopping Background Service")
+		for (let i = 0; i < this.trackedActions.length; i++) {
+            clearInterval( this.trackedActions[i].timer.id);
+        }
     }
 
     
