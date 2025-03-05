@@ -1,7 +1,6 @@
 import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
 import { ChildProcess, spawn } from "child_process";
-import { error } from "console";
-import { regex } from "regex";
+
 
 
 /**
@@ -156,12 +155,14 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 		fileName = path.substring(path.lastIndexOf("/") + 1);
 		return fileName;
 	}
+
+	
 }
 
 /**
  * Settings for {@link PythonScript}.
  */
-type PythonScriptSettings = {
+export type PythonScriptSettings = {
 	path?: string;
 	value1?: string;
 	image1?: string;

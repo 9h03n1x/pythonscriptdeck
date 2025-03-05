@@ -1,9 +1,8 @@
 import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
 import { ChildProcess, spawn } from "child_process";
+import { pyBGService } from "../python-bg-service";
 
-/**
- * An example action class that displays a count that increments by one each time the button is pressed.
- */
+
 @action({ UUID: "com.nicoohagedorn.pythonscriptdeck.service" })
 export class PythonService extends SingletonAction<PythonServiceSettings> {
 	/**
@@ -13,23 +12,48 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 	 */
 	onWillAppear(ev: WillAppearEvent<PythonServiceSettings>): void | Promise<void> {
 		const settings = ev.payload.settings;
-		if (settings.path){
-			if(settings.path.includes(".py")){
-				ev.action.setImage("imgs/actions/pyFileCheck.png")
-				ev.action.setTitle(this.getFileNameFromPath(settings.path));
+		if (settings.path) {
+			if (settings.path.search(".py")) {
+				ev.action.setImage("imgs/actions/pyServiceIcon.png")
+				var venvname = "";
+				if (settings.useVenv && settings.venvPath) {
+					streamDeck.logger.info(settings.venvPath);
+					venvname = settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"));
+					streamDeck.logger.info(venvname);
+					venvname = venvname.substring(venvname.lastIndexOf("/") + 1, venvname.length) + "\n";
+					streamDeck.logger.info(venvname);
+					venvname = `venv:\n ${venvname}`
+
+				}
+				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
 			}
 		}
+		if(this.checkSettingsComplete(settings)){
+			pyBGService.registerAction(ev);
+		}
+
 
 	}
 
 	onDidReceiveSettings(ev: DidReceiveSettingsEvent<PythonServiceSettings>): Promise<void> | void {
 		const settings = ev.payload.settings;
-		if (settings.path){
-			if(settings.path.includes(".py")){
-				ev.action.setImage("imgs/actions/pyFileCheck.png")
-				ev.action.setTitle(this.getFileNameFromPath(settings.path));
+		if (settings.path) {
+			if (settings.path.search(".py")) {
+				ev.action.setImage("imgs/actions/pyServiceIcon.png")
+				var venvname = "";
+				if (settings.useVenv && settings.venvPath) {
+					streamDeck.logger.info(settings.venvPath);
+					venvname = settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"));
+					streamDeck.logger.info(venvname);
+					venvname = venvname.substring(venvname.lastIndexOf("/") + 1, venvname.length) + "\n";
+					streamDeck.logger.info(venvname);
+					venvname = `venv:\n ${venvname}`
+
+				}
+				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
 			}
 		}
+		pyBGService.registerAction(ev);
 	}
 
 	/**
@@ -85,17 +109,30 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 		fileName = path.substring(path.lastIndexOf("/") + 1);
 		return fileName;
 	}
+
+	checkSettingsComplete(settings: PythonServiceSettings): boolean {
+		var check = false;
+		if (settings.path && settings.interval) {
+			streamDeck.logger.info("settings complete");
+			check = true;
+		}
+		return check;
+}
 }
 
 /**
  * Settings for {@link PythonScript}.
  */
-type PythonServiceSettings = {
+export type PythonServiceSettings = {
 	path?: string;
-	value1? : string;
-	image1? : string;
-	value2? : string;
-	image2? : string;
+	value1?: string;
+	image1?: string;
+	value2?: string;
+	image2?: string;
 	displayValues: boolean;
+	useVenv: boolean;
+	venvPath?: string;
+	interval: number;
+	id: string;
 
 };
