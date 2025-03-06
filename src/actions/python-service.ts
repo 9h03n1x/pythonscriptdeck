@@ -1,9 +1,8 @@
-import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent, WillDisappearEvent } from "@elgato/streamdeck";
 import { ChildProcess, spawn } from "child_process";
+import { pyBGService } from "../python-bg-service";
 
-/**
- * An example action class that displays a count that increments by one each time the button is pressed.
- */
+
 @action({ UUID: "com.nicoohagedorn.pythonscriptdeck.service" })
 export class PythonService extends SingletonAction<PythonServiceSettings> {
 	/**
@@ -13,24 +12,55 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 	 */
 	onWillAppear(ev: WillAppearEvent<PythonServiceSettings>): void | Promise<void> {
 		const settings = ev.payload.settings;
-		if (settings.path){
-			if(settings.path.includes(".py")){
-				ev.action.setImage("imgs/actions/pyFileCheck.png")
-				ev.action.setTitle(this.getFileNameFromPath(settings.path));
+		if (settings.path) {
+			if (settings.path.search(".py")) {
+				ev.action.setImage("imgs/actions/pyServiceIcon.png")
+				var venvname = "";
+				if (settings.useVenv && settings.venvPath) {
+					streamDeck.logger.info(settings.venvPath);
+					venvname = settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"));
+					streamDeck.logger.info(venvname);
+					venvname = venvname.substring(venvname.lastIndexOf("/") + 1, venvname.length) + "\n";
+					streamDeck.logger.info(venvname);
+					venvname = `venv:\n ${venvname}`
+
+				}
+				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
 			}
 		}
+		if(this.checkSettingsComplete(settings)){
+			pyBGService.registerAction(ev);
+		}
+
 
 	}
 
 	onDidReceiveSettings(ev: DidReceiveSettingsEvent<PythonServiceSettings>): Promise<void> | void {
 		const settings = ev.payload.settings;
-		if (settings.path){
-			if(settings.path.includes(".py")){
-				ev.action.setImage("imgs/actions/pyFileCheck.png")
-				ev.action.setTitle(this.getFileNameFromPath(settings.path));
+		if (settings.path) {
+			if (settings.path.search(".py")) {
+				ev.action.setImage("imgs/actions/pyServiceIcon.png")
+				var venvname = "";
+				if (settings.useVenv && settings.venvPath) {
+					streamDeck.logger.info(settings.venvPath);
+					venvname = settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"));
+					streamDeck.logger.info(venvname);
+					venvname = venvname.substring(venvname.lastIndexOf("/") + 1, venvname.length) + "\n";
+					streamDeck.logger.info(venvname);
+					venvname = `venv:\n ${venvname}`
+
+				}
+				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
 			}
 		}
+		pyBGService.registerAction(ev);
 	}
+
+	onWillDisappear(ev: WillDisappearEvent<PythonServiceSettings>): Promise<void> | void {
+		streamDeck.logger.info("onWillDisappear - unregister Action");
+		pyBGService.unregisterAction(ev);
+	}
+
 
 	/**
 	 * Listens for the {@link SingletonAction.onKeyDown} event which is emitted by Stream Deck when an action is pressed. Stream Deck provides various events for tracking interaction
@@ -40,42 +70,8 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 	 */
 	async onKeyDown(ev: KeyDownEvent<PythonServiceSettings>): Promise<void> {
 			// Update the count from the settings.
-			const settings = ev.payload.settings;
-			const { path } = settings;
-			if (path) {
-	
-				let pythonProcess: ChildProcess = spawn('python', [path]);
-	
-				while (pythonProcess.exitCode == null) {
-					pythonProcess.stdout!.on('data', (data: { toString: () => string; }) => {
-	
-						streamDeck.logger.debug(`stdout: ${data}`);
-						if (settings.displayValues) { ev.action.setTitle(data.toString().trim()); }
-						if (settings.image1 && (data.toString().trim() == (settings.value1 ?? ""))) {
-							ev.action.setImage(settings.image1)
-	
-	
-						}
-						if (settings.image2 && (data.toString().trim() == (settings.value2 ?? ""))) {
-							ev.action.setImage(settings.image2)
-	
-						}
-					});
-					await new Promise(resolve => setTimeout(resolve, 100));
-	
-	
-					pythonProcess.stderr!.on('data', (data: { toString: () => string; }) => {
-						console.error(`stderr: ${data}`);
-						ev.action.setTitle(data.toString().trim());
-	
-					});
-	
-					pythonProcess.on('close', (code: any) => {
-						console.log(`child process exited with code ${code}`);
-					});
-				}
-			}
-	
+			//TODO - enable start and stop the running of this script
+			pyBGService.getState() == 1 ? pyBGService.start(ev) : pyBGService.stop(ev);
 	
 		}
 	
@@ -85,17 +81,30 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 		fileName = path.substring(path.lastIndexOf("/") + 1);
 		return fileName;
 	}
+
+	checkSettingsComplete(settings: PythonServiceSettings): boolean {
+		var check = false;
+		if (settings.path && settings.interval) {
+			streamDeck.logger.info("settings complete");
+			check = true;
+		}
+		return check;
+}
 }
 
 /**
  * Settings for {@link PythonScript}.
  */
-type PythonServiceSettings = {
+export type PythonServiceSettings = {
 	path?: string;
-	value1? : string;
-	image1? : string;
-	value2? : string;
-	image2? : string;
+	value1?: string;
+	image1?: string;
+	value2?: string;
+	image2?: string;
 	displayValues: boolean;
+	useVenv: boolean;
+	venvPath?: string;
+	interval: number;
+	id: string;
 
 };

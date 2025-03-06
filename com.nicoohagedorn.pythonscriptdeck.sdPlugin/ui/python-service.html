@@ -17,12 +17,23 @@
     <sdpi-item label="Checkbox">
         <sdpi-checkbox setting="displayValues" label="display the values?"></sdpi-checkbox>
     </sdpi-item>
+    <sdpi-item label="Schedule [seconds]">
+        <sdpi-textfield
+        setting="interval"
+        pattern="^[0-9]+$"
+        type="number"
+        min="1"
+        max="10000"
+        value="5"
+        placeholder="seconds between execution"
+        required>
+    </sdpi-item>
     <sdpi-item label="return Value 1">
         <sdpi-textfield
         setting="value1"
         pattern="/^[a-z ,.'-]+$/i"
         placeholder="first value"
-        required>
+        >
     </sdpi-item>
     <sdpi-item label="display Image for Value 1">
         <sdpi-file setting="image1" accept="image/png, image/jpeg, image/gif"></sdpi-file>

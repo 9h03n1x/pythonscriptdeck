@@ -7,7 +7,7 @@
 			"Name": "Run Script",
 			"UUID": "com.nicoohagedorn.pythonscriptdeck.script",
 			"Icon": "imgs/plugin/python",
-			"Tooltip": "Displays a count, which increments by one on press.",
+			"Tooltip": "execute a python script via a key press",
 			"PropertyInspectorPath": "ui/python-script.html",
 			"Controllers": [
 				"Keypad"
@@ -18,6 +18,28 @@
 					"TitleAlignment": "bottom"
 				}
 			]
+		},
+		{
+			"Name": "Run Service",
+			"UUID": "com.nicoohagedorn.pythonscriptdeck.service",
+			"Icon": "imgs/plugin/python",
+			"Tooltip": "execute a python script based on a set timer",
+			"PropertyInspectorPath": "ui/python-service.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Name": "Running",
+					"Image": "imgs/actions/pyServiceRunning",
+					"TitleAlignment": "bottom"
+				},
+				{	
+					"Name": "Stopped",
+					"Image": "imgs/actions/pyServiceStopped",
+					"TitleAlignment": "bottom"
+				}
+			]
 		}
 	],
 	"Category": "Python Script Deck",
@@ -25,6 +47,7 @@
 	"CodePath": "bin/plugin.js",
 	"Description": "This Plugin allows you to execute Pyhton scripts and display the results on a StreamDeck Key",
 	"Icon": "imgs/plugin/marketplace",
+	"URL": "https://youtu.be/thXQx5Xv6x4",
 	"SDKVersion": 2,
 	"Software": {
 		"MinimumVersion": "6.5"
