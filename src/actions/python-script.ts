@@ -141,11 +141,13 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 
 		}
 		else {
-			pythonProcess = spawn("python3", [path]);
-			if (pythonProcess.connected == false){
-				streamDeck.logger.info("python3 not found, trying python")
-				pythonProcess = spawn("python", [path]);
-			}
+			streamDeck.logger.info(`Use Python: ${path}`)
+			pythonProcess = spawn(`cmd.exe`, [`/c ${path}`]);
+			/*
+			if (pythonProcess.connected == false) {
+				streamDeck.logger.debug("python not found, trying python3")
+				pythonProcess = spawn("cmd.exe", ["/c", `python3 ${path}`]);
+			}*/
 		}
 		return pythonProcess;
 	}

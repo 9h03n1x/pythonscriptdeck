@@ -1,6 +1,6 @@
 {
 	"Name": "PythonScriptDeck",
-	"Version": "0.4.0.0",
+	"Version": "0.5.0.1",
 	"Author": "nicoohagedorn",
 	"Actions": [
 		{
@@ -34,7 +34,7 @@
 					"Image": "imgs/actions/pyServiceRunning",
 					"TitleAlignment": "bottom"
 				},
-				{	
+				{
 					"Name": "Stopped",
 					"Image": "imgs/actions/pyServiceStopped",
 					"TitleAlignment": "bottom"
@@ -45,7 +45,7 @@
 	"Category": "Python Script Deck",
 	"CategoryIcon": "imgs/plugin/python",
 	"CodePath": "bin/plugin.js",
-	"Description": "This Plugin allows you to execute Pyhton scripts and display the results on a StreamDeck Key",
+	"Description": "This Plugin allows you to execute Python scripts and display the results on a StreamDeck Key",
 	"Icon": "imgs/plugin/marketplace",
 	"URL": "https://youtu.be/thXQx5Xv6x4",
 	"SDKVersion": 2,
