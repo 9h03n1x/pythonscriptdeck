@@ -1,7 +1,6 @@
 import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
 import { ChildProcess, spawn } from "child_process";
-import { error } from "console";
-import { regex } from "regex";
+
 
 
 /**
@@ -142,11 +141,13 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 
 		}
 		else {
-			pythonProcess = spawn("python3", [path]);
-			if (pythonProcess.connected == false){
-				streamDeck.logger.info("python3 not found, trying python")
-				pythonProcess = spawn("python", [path]);
-			}
+			streamDeck.logger.info(`Use Python: ${path}`)
+			pythonProcess = spawn(`cmd.exe`, [`/c ${path}`]);
+			/*
+			if (pythonProcess.connected == false) {
+				streamDeck.logger.debug("python not found, trying python3")
+				pythonProcess = spawn("cmd.exe", ["/c", `python3 ${path}`]);
+			}*/
 		}
 		return pythonProcess;
 	}
@@ -156,12 +157,14 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 		fileName = path.substring(path.lastIndexOf("/") + 1);
 		return fileName;
 	}
+
+	
 }
 
 /**
  * Settings for {@link PythonScript}.
  */
-type PythonScriptSettings = {
+export type PythonScriptSettings = {
 	path?: string;
 	value1?: string;
 	image1?: string;
