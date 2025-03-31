@@ -14,7 +14,7 @@
 			],
 			"States": [
 				{
-					"Image": "imgs/plugin/python_color",
+					"Image": "imgs/actions/gemini_icons/pyNoFileFound",
 					"TitleAlignment": "bottom"
 				}
 			]
