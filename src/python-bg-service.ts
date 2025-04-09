@@ -1,6 +1,7 @@
 import streamDeck, { DidReceiveSettingsEvent, KeyDownEvent, WillAppearEvent, WillDisappearEvent } from '@elgato/streamdeck';
 import { PythonServiceSettings } from './actions/python-service';
 import { ChildProcess, spawn } from 'child_process';
+import * as os from 'os';
 
 /**
  * Error mapping for python errors
@@ -152,20 +153,24 @@ class PythonBackgroundService {
 	}
 	createChildProcess(useVenv: boolean, venvPath: string | undefined, path: string) {
 		let pythonProcess: ChildProcess | undefined;
-		if (useVenv && venvPath) {
-			streamDeck.logger.debug(`Use Virtual Environment: ${venvPath}`)
-			pythonProcess = spawn("cmd.exe", ["/c", `call ${venvPath.substring(0, venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path}`]);
+		const isWindows = os.platform() === "win32";
 
+		if (useVenv && venvPath) {
+			if (isWindows) {
+				// Windows - use .bat activation
+				pythonProcess = spawn("cmd.exe", ["/c", `call ${venvPath}/Scripts/activate.bat && python ${path}`]);
+			} else {
+				// macOS/Linux - use source and run in bash
+				pythonProcess = spawn("bash", ["-c", `source "${venvPath}/bin/activate" && python3 "${path}"`]);
+			}
+		} else {
+			if (isWindows) {
+				pythonProcess = spawn("cmd.exe", ["/c", `python ${path}`]);
+			} else {
+				pythonProcess = spawn("python3", [path]);
+			}
 		}
-		else {
-			streamDeck.logger.info(`Use Python: ${path}`)
-			pythonProcess = spawn(`cmd.exe`, [`/c ${path}`]);
-			/*
-			if (pythonProcess.connected == false) {
-				streamDeck.logger.debug("python not found, trying python3")
-				pythonProcess = spawn("cmd.exe", ["/c", `python3 ${path}`]);
-			}*/
-		}
+		
 		return pythonProcess;
 	}
 

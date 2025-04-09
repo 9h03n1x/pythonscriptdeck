@@ -37,7 +37,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 		const settings = ev.payload.settings;
 		if (settings.path) {
 			if (settings.path.search(".py")) {
-				ev.action.setImage("imgs/actions/pyFileCheck.png")
+				ev.action.setImage("imgs/actions/gemini_icons/pyFileLoaded.png")
 				var venvname = "";
 				if (settings.useVenv && settings.venvPath) {
 					streamDeck.logger.info(settings.venvPath);
@@ -58,7 +58,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 		const settings = ev.payload.settings;
 		if (settings.path) {
 			if (settings.path.search(".py")) {
-				ev.action.setImage("imgs/actions/pyFileCheck.png")
+				
 				var venvname = "";
 				if (settings.useVenv && settings.venvPath) {
 					streamDeck.logger.info(settings.venvPath);
@@ -67,7 +67,9 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 					venvname = venvname.substring(venvname.lastIndexOf("/") + 1, venvname.length) + "\n";
 					streamDeck.logger.info(venvname);
 					venvname = `venv:\n ${venvname}`
-
+					ev.action.setImage("imgs/actions/gemini_icons/pyVirtEnvActive.png")
+				}else {
+					ev.action.setImage("imgs/actions/gemini_icons/pyFileLoaded.png")
 				}
 				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
 			}
@@ -101,7 +103,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 						ev.action.setImage(settings.image2)
 
 					}else(
-						ev.action.setImage("imgs/actions/pyFileCheck.png")
+						ev.action.setImage("imgs/actions/gemini_icons/pyFileLoaded.png")
 					)
 				});
 
@@ -136,6 +138,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	createChildProcess(useVenv: boolean, venvPath: string | undefined, path: string) {
 		let pythonProcess: ChildProcess | undefined;
 		if (useVenv && venvPath) {
+			
 			streamDeck.logger.info(`Use Virtual Environment: ${venvPath}`)
 			pythonProcess = spawn("cmd.exe", ["/c", `call ${venvPath.substring(0, venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path}`]);
 
