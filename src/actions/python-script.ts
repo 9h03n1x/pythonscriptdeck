@@ -1,5 +1,7 @@
 import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
-import { ChildProcess, spawn } from "child_process";
+import { ChildProcess } from "child_process";
+import { getFileNameFromPath, spawnPythonProcess } from "../utils";
+import * as path from 'path';
 
 
 
@@ -35,44 +37,29 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	 */
 	onWillAppear(ev: WillAppearEvent<PythonScriptSettings>): void | Promise<void> {
 		const settings = ev.payload.settings;
-		if (settings.path) {
-			if (settings.path.search(".py")) {
-				ev.action.setImage("imgs/actions/gemini_icons/pyFileLoaded.png")
-				var venvname = "";
-				if (settings.useVenv && settings.venvPath) {
-					streamDeck.logger.info(settings.venvPath);
-					venvname = settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"));
-					streamDeck.logger.info(venvname);
-					venvname = venvname.substring(venvname.lastIndexOf("/") + 1, venvname.length) + "\n";
-					streamDeck.logger.info(venvname);
-					venvname = `venv:\n ${venvname}`
-
-				}
-				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
+		if (settings.path && settings.path.endsWith(".py")) {
+			ev.action.setImage("imgs/actions/gemini_icons/pyFileLoaded.png")
+			let venvname = "";
+			if (settings.useVenv && settings.venvPath) {
+				streamDeck.logger.info(settings.venvPath);
+				venvname = `venv:\n ${path.basename(path.dirname(settings.venvPath))}\n`;
 			}
+			ev.action.setTitle(`${venvname}${getFileNameFromPath(settings.path)}`);
 		}
-
 	}
 
 	onDidReceiveSettings(ev: DidReceiveSettingsEvent<PythonScriptSettings>): Promise<void> | void {
 		const settings = ev.payload.settings;
-		if (settings.path) {
-			if (settings.path.search(".py")) {
-				
-				var venvname = "";
-				if (settings.useVenv && settings.venvPath) {
-					streamDeck.logger.info(settings.venvPath);
-					venvname = settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"));
-					streamDeck.logger.info(venvname);
-					venvname = venvname.substring(venvname.lastIndexOf("/") + 1, venvname.length) + "\n";
-					streamDeck.logger.info(venvname);
-					venvname = `venv:\n ${venvname}`
-					ev.action.setImage("imgs/actions/gemini_icons/pyVirtEnvActive.png")
-				}else {
-					ev.action.setImage("imgs/actions/gemini_icons/pyFileLoaded.png")
-				}
-				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
+		if (settings.path && settings.path.endsWith(".py")) {
+			let venvname = "";
+			if (settings.useVenv && settings.venvPath) {
+				streamDeck.logger.info(settings.venvPath);
+				venvname = `venv:\n ${path.basename(path.dirname(settings.venvPath))}\n`;
+				ev.action.setImage("imgs/actions/gemini_icons/pyVirtEnvActive.png")
+			} else {
+				ev.action.setImage("imgs/actions/gemini_icons/pyFileLoaded.png")
 			}
+			ev.action.setTitle(`${venvname}${getFileNameFromPath(settings.path)}`);
 		}
 	}
 
@@ -89,7 +76,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 		let pythonProcess: ChildProcess | undefined;
 		if (path) {
 			streamDeck.logger.info(`path to script is: ${path}`)
-			pythonProcess = this.createChildProcess(settings.useVenv, settings.venvPath, path);
+			pythonProcess = spawnPythonProcess(settings.useVenv, settings.venvPath, path);
 
 			if (pythonProcess != undefined && pythonProcess.stdout != null) {
 				streamDeck.logger.info(`start reading output`);
@@ -98,22 +85,20 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 					if (settings.displayValues) { ev.action.setTitle(data.toString().trim()); }
 					if (settings.image1 && (data.toString().trim() == (settings.value1 ?? ""))) {
 						ev.action.setImage(settings.image1)
-					}
-					if (settings.image2 && (data.toString().trim() == (settings.value2 ?? ""))) {
+					} else if (settings.image2 && (data.toString().trim() == (settings.value2 ?? ""))) {
 						ev.action.setImage(settings.image2)
-
-					}else(
+					} else {
 						ev.action.setImage("imgs/actions/gemini_icons/pyFileLoaded.png")
-					)
+					}
 				});
 
 				pythonProcess.stderr!.on('data', (data: { toString: () => string; }) => {
-					const errorString = data.toString().trim().replace(RegExp('/(?:\r\n|\r|\n)/g'), ' ');
+					const errorString = data.toString().trim().replace(/(?:\r\n|\r|\n)/g, ' ');
 					streamDeck.logger.error(`stderr: ${errorString}`);
 					ev.action.setImage("imgs/actions/pyFilecheckFailed.png");
 					let errorTitle = "python\nother\nissue";
 					for (const key in pythonErrorMap) {
-						if (errorString.search(key) > -1) {
+						if (errorString.includes(key)) {
 							errorTitle = pythonErrorMap[key];
 							break;
 						}
@@ -131,37 +116,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 				});
 			}
 		}
-
-
 	}
-
-	createChildProcess(useVenv: boolean, venvPath: string | undefined, path: string) {
-		let pythonProcess: ChildProcess | undefined;
-		if (useVenv && venvPath) {
-			
-			streamDeck.logger.info(`Use Virtual Environment: ${venvPath}`)
-			pythonProcess = spawn("cmd.exe", ["/c", `call ${venvPath.substring(0, venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path}`]);
-
-		}
-		else {
-			streamDeck.logger.info(`Use Python: ${path}`)
-			pythonProcess = spawn(`cmd.exe`, [`/c ${path}`]);
-			/*
-			if (pythonProcess.connected == false) {
-				streamDeck.logger.debug("python not found, trying python3")
-				pythonProcess = spawn("cmd.exe", ["/c", `python3 ${path}`]);
-			}*/
-		}
-		return pythonProcess;
-	}
-
-	getFileNameFromPath(path: string): string {
-		var fileName = "";
-		fileName = path.substring(path.lastIndexOf("/") + 1);
-		return fileName;
-	}
-
-	
 }
 
 /**

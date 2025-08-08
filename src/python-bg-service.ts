@@ -1,7 +1,7 @@
 import streamDeck, { DidReceiveSettingsEvent, KeyDownEvent, WillAppearEvent, WillDisappearEvent } from '@elgato/streamdeck';
 import { PythonServiceSettings } from './actions/python-service';
-import { ChildProcess, spawn } from 'child_process';
-import * as os from 'os';
+import { ChildProcess } from 'child_process';
+import { spawnPythonProcess } from './utils';
 
 /**
  * Error mapping for python errors
@@ -33,46 +33,39 @@ enum ServiceState {
 
 class PythonBackgroundService {
 
-	trackedActions: any[] = [];
+	trackedActions: { id: string, ev: WillAppearEvent<PythonServiceSettings> | DidReceiveSettingsEvent<PythonServiceSettings>, timerId?: NodeJS.Timeout }[] = [];
 	state = ServiceState.stopped;
 
 
 	registerAction(ev: WillAppearEvent<PythonServiceSettings> | DidReceiveSettingsEvent<PythonServiceSettings>) {
+		const existingAction = this.trackedActions.find(action => action.id === ev.action.id);
 
-		var duplicate = false;
-		streamDeck.logger.info("checking if action is already tracked");
-		var newtrackedAction = {
-			"id": ev.action.id, "ev": ev, "timerId": undefined
-		}
-
-		for (let i = 0; i < this.trackedActions.length; i++) {
-			if (this.trackedActions[i] == ev.action.id) {
-				duplicate = true;
-				streamDeck.logger.info("action already tracked - updating action");
-				clearInterval(this.trackedActions[i].timerId);
-				this.trackedActions[this.trackedActions.indexOf(this.trackedActions[i])] = newtrackedAction;
-				break;
-			}
-		}
-
-		if (duplicate == false) {
-			this.trackedActions.push(newtrackedAction)
+		if (existingAction) {
+			streamDeck.logger.info("action already tracked - updating action");
+			clearInterval(existingAction.timerId);
+			existingAction.ev = ev;
+		} else {
+			streamDeck.logger.info("tracking new action");
+			this.trackedActions.push({
+				"id": ev.action.id, "ev": ev, "timerId": undefined
+			});
 		}
 	}
 
 	unregisterAction(ev: WillDisappearEvent<PythonServiceSettings>) {
-		for (let i = 0; i < this.trackedActions.length; i++) {
-			if (this.trackedActions[i] == ev.action.id) {
-				streamDeck.logger.info(`stopping execution of the action ${ev.action.manifestId}, id: ${ev.action.id}`);
-				clearInterval(this.trackedActions[i].timerId);
-			}
+		const actionIndex = this.trackedActions.findIndex(action => action.id === ev.action.id);
+		if (actionIndex > -1) {
+			const action = this.trackedActions[actionIndex];
+			streamDeck.logger.info(`stopping execution of the action ${action.ev.action.manifestId}, id: ${action.id}`);
+			clearInterval(action.timerId);
+			this.trackedActions.splice(actionIndex, 1);
 		}
 	}
 
 	start(ev: KeyDownEvent<PythonServiceSettings>) {
 		streamDeck.logger.info("starting Background Service")
-		for (let i = 0; i < this.trackedActions.length; i++) {
-			this.trackedActions[i].timerId = this.createTimer(this.trackedActions[i].ev);
+		for (const action of this.trackedActions) {
+			action.timerId = this.createTimer(action.ev);
 		}
 		this.state = ServiceState.running;
 		ev.action.setImage("imgs/actions/pyServiceRunning.png");
@@ -80,15 +73,11 @@ class PythonBackgroundService {
 
 	stop(ev: KeyDownEvent<PythonServiceSettings>) {
 		streamDeck.logger.info("stopping Background Service")
-		for (let i = 0; i < this.trackedActions.length; i++) {
-			if (this.trackedActions[i].timerId == undefined) {
-				continue;
-			} else {
-				clearInterval(this.trackedActions[i].timerId);
-				this.trackedActions[i].timerId = undefined;
+		for (const action of this.trackedActions) {
+			if (action.timerId) {
+				clearInterval(action.timerId);
+				action.timerId = undefined;
 			}
-
-
 		}
 		this.state = ServiceState.stopped;
 		streamDeck.logger.info(`stopping execution of the action ${ev.action.manifestId}, id: ${ev.action.id}`)
@@ -96,7 +85,7 @@ class PythonBackgroundService {
 	}
 
 	getState = () => {
-		return this.state;
+		return this.state === ServiceState.running;
 	}
 
 
@@ -107,7 +96,7 @@ class PythonBackgroundService {
 		let pythonProcess: ChildProcess | undefined;
 		if (path) {
 			streamDeck.logger.debug(`path to script is: ${path}`)
-			pythonProcess = this.createChildProcess(settings.useVenv, settings.venvPath, path);
+			pythonProcess = spawnPythonProcess(settings.useVenv, settings.venvPath, path);
 
 			if (pythonProcess != undefined && pythonProcess.stdout != null) {
 				streamDeck.logger.debug(`start reading output`);
@@ -120,18 +109,18 @@ class PythonBackgroundService {
 					else if (settings.image2 && (data.toString().trim() == (settings.value2 ?? ""))) {
 						ev.action.setImage(settings.image2)
 
-					} else (
+					} else {
 						ev.action.setImage("imgs/actions/pyServiceIcon.png")
-					)
+					}
 				});
 
 				pythonProcess.stderr!.on('data', (data: { toString: () => string; }) => {
-					const errorString = data.toString().trim().replace(RegExp('/(?:\r\n|\r|\n)/g'), ' ');
+					const errorString = data.toString().trim().replace(/(?:\r\n|\r|\n)/g, ' ');
 					streamDeck.logger.error(`stderr: ${errorString}`);
 					ev.action.setImage("imgs/actions/pyServiceIconFail.png");
 					let errorTitle = "python\nother\nissue";
 					for (const key in pythonErrorMap) {
-						if (errorString.search(key) > -1) {
+						if (errorString.includes(key)) {
 							errorTitle = pythonErrorMap[key];
 							break;
 						}
@@ -150,34 +139,6 @@ class PythonBackgroundService {
 			}
 		}
 
-	}
-	createChildProcess(useVenv: boolean, venvPath: string | undefined, path: string) {
-		let pythonProcess: ChildProcess | undefined;
-		const isWindows = os.platform() === "win32";
-
-		if (useVenv && venvPath) {
-			if (isWindows) {
-				// Windows - use .bat activation
-				pythonProcess = spawn("cmd.exe", ["/c", `call ${venvPath}/Scripts/activate.bat && python ${path}`]);
-			} else {
-				// macOS/Linux - use source and run in bash
-				pythonProcess = spawn("bash", ["-c", `source "${venvPath}/bin/activate" && python3 "${path}"`]);
-			}
-		} else {
-			if (isWindows) {
-				pythonProcess = spawn("cmd.exe", ["/c", `python ${path}`]);
-			} else {
-				pythonProcess = spawn("python3", [path]);
-			}
-		}
-		
-		return pythonProcess;
-	}
-
-	getFileNameFromPath(path: string): string {
-		var fileName = "";
-		fileName = path.substring(path.lastIndexOf("/") + 1);
-		return fileName;
 	}
 
 	createTimer(ev: WillAppearEvent<PythonServiceSettings> | DidReceiveSettingsEvent<PythonServiceSettings> | KeyDownEvent<PythonServiceSettings>) {

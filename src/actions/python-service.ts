@@ -1,6 +1,7 @@
 import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent, WillDisappearEvent } from "@elgato/streamdeck";
-import { ChildProcess, spawn } from "child_process";
 import { pyBGService } from "../python-bg-service";
+import { getFileNameFromPath } from "../utils";
+import * as path from 'path';
 
 
 @action({ UUID: "com.nicoohagedorn.pythonscriptdeck.service" })
@@ -12,46 +13,30 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 	 */
 	onWillAppear(ev: WillAppearEvent<PythonServiceSettings>): void | Promise<void> {
 		const settings = ev.payload.settings;
-		if (settings.path) {
-			if (settings.path.search(".py")) {
-				ev.action.setImage("imgs/actions/pyServiceIcon.png")
-				var venvname = "";
-				if (settings.useVenv && settings.venvPath) {
-					streamDeck.logger.info(settings.venvPath);
-					venvname = settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"));
-					streamDeck.logger.info(venvname);
-					venvname = venvname.substring(venvname.lastIndexOf("/") + 1, venvname.length) + "\n";
-					streamDeck.logger.info(venvname);
-					venvname = `venv:\n ${venvname}`
-
-				}
-				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
+		if (settings.path && settings.path.endsWith(".py")) {
+			ev.action.setImage("imgs/actions/pyServiceIcon.png")
+			let venvname = "";
+			if (settings.useVenv && settings.venvPath) {
+				streamDeck.logger.info(settings.venvPath);
+				venvname = `venv:\n ${path.basename(path.dirname(settings.venvPath))}\n`;
 			}
+			ev.action.setTitle(`${venvname}${getFileNameFromPath(settings.path)}`);
 		}
 		if(this.checkSettingsComplete(settings)){
 			pyBGService.registerAction(ev);
 		}
-
-
 	}
 
 	onDidReceiveSettings(ev: DidReceiveSettingsEvent<PythonServiceSettings>): Promise<void> | void {
 		const settings = ev.payload.settings;
-		if (settings.path) {
-			if (settings.path.search(".py")) {
-				ev.action.setImage("imgs/actions/pyServiceIcon.png")
-				var venvname = "";
-				if (settings.useVenv && settings.venvPath) {
-					streamDeck.logger.info(settings.venvPath);
-					venvname = settings.venvPath.substring(0, settings.venvPath.lastIndexOf("/"));
-					streamDeck.logger.info(venvname);
-					venvname = venvname.substring(venvname.lastIndexOf("/") + 1, venvname.length) + "\n";
-					streamDeck.logger.info(venvname);
-					venvname = `venv:\n ${venvname}`
-
-				}
-				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
+		if (settings.path && settings.path.endsWith(".py")) {
+			ev.action.setImage("imgs/actions/pyServiceIcon.png")
+			let venvname = "";
+			if (settings.useVenv && settings.venvPath) {
+				streamDeck.logger.info(settings.venvPath);
+				venvname = `venv:\n ${path.basename(path.dirname(settings.venvPath))}\n`;
 			}
+			ev.action.setTitle(`${venvname}${getFileNameFromPath(settings.path)}`);
 		}
 		pyBGService.registerAction(ev);
 	}
@@ -71,25 +56,17 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 	async onKeyDown(ev: KeyDownEvent<PythonServiceSettings>): Promise<void> {
 			// Update the count from the settings.
 			//TODO - enable start and stop the running of this script
-			pyBGService.getState() == 1 ? pyBGService.start(ev) : pyBGService.stop(ev);
+			pyBGService.getState() ? pyBGService.stop(ev) : pyBGService.start(ev);
 	
 		}
-	
-
-	getFileNameFromPath(path: string): string{
-		var fileName = "";
-		fileName = path.substring(path.lastIndexOf("/") + 1);
-		return fileName;
-	}
 
 	checkSettingsComplete(settings: PythonServiceSettings): boolean {
-		var check = false;
 		if (settings.path && settings.interval) {
 			streamDeck.logger.info("settings complete");
-			check = true;
+			return true;
 		}
-		return check;
-}
+		return false;
+	}
 }
 
 /**
