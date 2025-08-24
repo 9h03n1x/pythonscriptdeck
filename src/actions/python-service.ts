@@ -97,6 +97,7 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
  */
 export type PythonServiceSettings = {
 	path?: string;
+	cliArgs?: string;
 	value1?: string;
 	image1?: string;
 	value2?: string;

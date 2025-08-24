@@ -107,7 +107,7 @@ class PythonBackgroundService {
 		let pythonProcess: ChildProcess | undefined;
 		if (path) {
 			streamDeck.logger.debug(`path to script is: ${path}`)
-			pythonProcess = this.createChildProcess(settings.useVenv, settings.venvPath, path);
+			pythonProcess = this.createChildProcess(settings.useVenv, settings.venvPath, path, settings.cliArgs);
 
 			if (pythonProcess != undefined && pythonProcess.stdout != null) {
 				streamDeck.logger.debug(`start reading output`);
@@ -151,23 +151,24 @@ class PythonBackgroundService {
 		}
 
 	}
-	createChildProcess(useVenv: boolean, venvPath: string | undefined, path: string) {
+	createChildProcess(useVenv: boolean, venvPath: string | undefined, path: string, cliArgs: string | undefined) {
 		let pythonProcess: ChildProcess | undefined;
+		const args = cliArgs || "";
 		const isWindows = os.platform() === "win32";
 
 		if (useVenv && venvPath) {
 			if (isWindows) {
 				// Windows - use .bat activation
-				pythonProcess = spawn("cmd.exe", ["/c", `call ${venvPath}/Scripts/activate.bat && python ${path}`]);
+				pythonProcess = spawn("cmd.exe", ["/c", `call ${venvPath}/Scripts/activate.bat && python ${path} ${args}`]);
 			} else {
 				// macOS/Linux - use source and run in bash
-				pythonProcess = spawn("bash", ["-c", `source "${venvPath}/bin/activate" && python3 "${path}"`]);
+				pythonProcess = spawn("bash", ["-c", `source "${venvPath}/bin/activate" && python3 "${path}" ${args}`]);
 			}
 		} else {
 			if (isWindows) {
-				pythonProcess = spawn("cmd.exe", ["/c", `python ${path}`]);
+				pythonProcess = spawn("cmd.exe", ["/c", `python ${path} ${args}`]);
 			} else {
-				pythonProcess = spawn("python3", [path]);
+				pythonProcess = spawn("python3", [path, ...args.split(" ")]);
 			}
 		}
 		
