@@ -89,7 +89,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 		let pythonProcess: ChildProcess | undefined;
 		if (path) {
 			streamDeck.logger.info(`path to script is: ${path}`)
-			pythonProcess = this.createChildProcess(settings.useVenv, settings.venvPath, path);
+			pythonProcess = this.createChildProcess(settings.useVenv, settings.venvPath, path, settings.cliArgs);
 
 			if (pythonProcess != undefined && pythonProcess.stdout != null) {
 				streamDeck.logger.info(`start reading output`);
@@ -135,17 +135,18 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 
 	}
 
-	createChildProcess(useVenv: boolean, venvPath: string | undefined, path: string) {
+	createChildProcess(useVenv: boolean, venvPath: string | undefined, path: string, cliArgs: string | undefined) {
 		let pythonProcess: ChildProcess | undefined;
+		const args = cliArgs || "";
 		if (useVenv && venvPath) {
 			
 			streamDeck.logger.info(`Use Virtual Environment: ${venvPath}`)
-			pythonProcess = spawn("cmd.exe", ["/c", `call ${venvPath.substring(0, venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path}`]);
+			pythonProcess = spawn("cmd.exe", ["/c", `call ${venvPath.substring(0, venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path} ${args}`]);
 
 		}
 		else {
 			streamDeck.logger.info(`Use Python: ${path}`)
-			pythonProcess = spawn(`cmd.exe`, [`/c ${path}`]);
+			pythonProcess = spawn(`cmd.exe`, [`/c ${path} ${args}`]);
 			/*
 			if (pythonProcess.connected == false) {
 				streamDeck.logger.debug("python not found, trying python3")
@@ -169,6 +170,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
  */
 export type PythonScriptSettings = {
 	path?: string;
+	cliArgs?: string;
 	value1?: string;
 	image1?: string;
 	value2?: string;
