@@ -4,8 +4,9 @@ import { PythonScript } from "./actions/python-script";
 import { PythonService } from "./actions/python-service";
 import { pyBGService } from "./python-bg-service";
 
-// We can enable "trace" logging so that all messages between the Stream Deck, and the plugin are recorded. When storing sensitive information
-streamDeck.logger.setLevel(LogLevel.TRACE);
+// Configure logging level - use INFO for production, TRACE for debugging
+const logLevel = process.env.STREAMDECK_LOG_LEVEL === "trace" ? LogLevel.TRACE : LogLevel.INFO;
+streamDeck.logger.setLevel(logLevel);
 
 // Register the increment action.
 streamDeck.actions.registerAction(new PythonScript());

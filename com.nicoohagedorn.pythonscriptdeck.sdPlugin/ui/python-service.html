@@ -14,14 +14,14 @@
     <sdpi-item label="Path to Script">
         <sdpi-file setting="path" accept="text/py"></sdpi-file>
     </sdpi-item>
-    <sdpi-item label="Checkbox">
-        <sdpi-checkbox setting="displayValues" label="display the values?"></sdpi-checkbox>
+    <sdpi-item label="Display values?">
+        <sdpi-checkbox setting="displayValues" label="Update the key with script output?"></sdpi-checkbox>
     </sdpi-item>
     <sdpi-item label="Schedule [seconds]">
         <sdpi-textfield
         setting="interval"
         pattern="^[0-9]+$"
-        type="number"
+        inputmode="numeric"
         min="1"
         max="10000"
         value="5"
@@ -31,7 +31,7 @@
     <sdpi-item label="return Value 1">
         <sdpi-textfield
         setting="value1"
-        pattern="/^[a-z ,.'-]+$/i"
+        pattern="^[A-Za-z ,.'-]+$"
         placeholder="first value"
         >
     </sdpi-item>
@@ -41,7 +41,7 @@
     <sdpi-item label="return Value 2">
         <sdpi-textfield
         setting="value2"
-        pattern="/^[a-z ,.'-]+$/i"
+        pattern="^[A-Za-z ,.'-]+$"
         placeholder="second value"
         >
     </sdpi-item>

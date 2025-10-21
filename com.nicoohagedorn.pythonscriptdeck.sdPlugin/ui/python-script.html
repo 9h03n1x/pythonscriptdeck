@@ -7,8 +7,28 @@
     <script src="https://cdn.jsdelivr.net/gh/geekyeggo/sdpi-components@v3/dist/sdpi-components.js"></script>
     <script>
         function showExampleDialog() {
-            htmlContent = "This plugin allows you to run python scripts.<br><b>Example Script:</b><br><pre>import random\n# A function that will return either\n# 'True' or 'False' randomly\n# Replace this with your code and\n# return your desired values\n\ndef random_bool():\nreturn random.choice([True, False])\n\n# excute the function and print the\n# return value.\n# The plugin will then parse the\n# return value and react\n# so put in 'True' or 'False' into\n# the field return value.\n\nif __name__ == '__main__':\n    print(random_bool())"
-            title = "Example Python Script"
+            const exampleScript = String.raw`import random
+
+# A function that will return either
+# 'True' or 'False' randomly
+# Replace this with your code and
+# return your desired values
+
+def random_bool():
+    return random.choice([True, False])
+
+# Execute the function and print the
+# return value.
+# The plugin will then parse the
+# return value and react
+# so put 'True' or 'False' into
+# the field return value.
+
+if __name__ == "__main__":
+    print(random_bool())`;
+
+            const htmlContent = `This plugin allows you to run python scripts.<br><b>Example Script:</b><br><pre>${exampleScript}</pre>`;
+            const title = "Example Python Script";
             // Create a modal dialog container
             const dialog = document.createElement("div");
             dialog.style.position = "fixed";
@@ -16,7 +36,7 @@
             dialog.style.left = "50%";
             dialog.style.transform = "translate(-50%, -50%)";
             dialog.style.backgroundColor = "white";
-            dialog.style.border = "1px solid # ccc";
+            dialog.style.border = "1px solid #ccc";
             dialog.style.padding = "20px";
             dialog.style.zIndex = "1000"; // Ensure it's on top
             dialog.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
@@ -86,19 +106,19 @@
         <sdpi-file setting="venvPath" accept="text/cfg"></sdpi-file>
     </sdpi-item>
     <sdpi-item label="return Value 1">
-        <sdpi-textfield setting="value1" pattern="/^[a-z ,.'-]+$/i" placeholder="first value as string">
+    <sdpi-textfield setting="value1" pattern="^[A-Za-z ,.'-]+$" placeholder="first value as string">
     </sdpi-item>
     <sdpi-item label="display Image for Value 1">
         <sdpi-file setting="image1" accept="image/png, image/jpeg, image/gif"></sdpi-file>
     </sdpi-item>
     <sdpi-item label="return Value 2">
-        <sdpi-textfield setting="value2" pattern="/^[a-z ,.'-]+$/i" placeholder="second value as string">
+    <sdpi-textfield setting="value2" pattern="^[A-Za-z ,.'-]+$" placeholder="second value as string">
     </sdpi-item>
     <sdpi-item label="display Image for Value 2">
         <sdpi-file setting="image2" accept="image/png, image/jpeg, image/gif"></sdpi-file>
     </sdpi-item>
     <sdpi-item>
-        <sdpi-button onclick="javascript:showExampleDialog()" label="Open Folder" id="openFolder">
+        <sdpi-button onclick="javascript:showExampleDialog()" label="Example Python Script" id="openFolder">
             Example Python Script
         </sdpi-button>
     </sdpi-item>

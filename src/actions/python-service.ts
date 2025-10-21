@@ -1,6 +1,5 @@
 import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent, WillDisappearEvent } from "@elgato/streamdeck";
-import { ChildProcess, spawn } from "child_process";
-import { pyBGService } from "../python-bg-service";
+import { pyBGService, ServiceState } from "../python-bg-service";
 
 
 @action({ UUID: "com.nicoohagedorn.pythonscriptdeck.service" })
@@ -13,7 +12,7 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 	onWillAppear(ev: WillAppearEvent<PythonServiceSettings>): void | Promise<void> {
 		const settings = ev.payload.settings;
 		if (settings.path) {
-			if (settings.path.search(".py")) {
+			if (settings.path.includes(".py")) {
 				ev.action.setImage("imgs/actions/pyServiceIcon.png")
 				var venvname = "";
 				if (settings.useVenv && settings.venvPath) {
@@ -28,7 +27,7 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 				ev.action.setTitle(`${venvname}${this.getFileNameFromPath(settings.path)}`);
 			}
 		}
-		if(this.checkSettingsComplete(settings)){
+		if (this.checkSettingsComplete(settings)) {
 			pyBGService.registerAction(ev);
 		}
 
@@ -38,7 +37,7 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 	onDidReceiveSettings(ev: DidReceiveSettingsEvent<PythonServiceSettings>): Promise<void> | void {
 		const settings = ev.payload.settings;
 		if (settings.path) {
-			if (settings.path.search(".py")) {
+			if (settings.path.includes(".py")) {
 				ev.action.setImage("imgs/actions/pyServiceIcon.png")
 				var venvname = "";
 				if (settings.useVenv && settings.venvPath) {
@@ -69,27 +68,49 @@ export class PythonService extends SingletonAction<PythonServiceSettings> {
 	 * settings using `setSettings` and `getSettings`.
 	 */
 	async onKeyDown(ev: KeyDownEvent<PythonServiceSettings>): Promise<void> {
-			// Update the count from the settings.
-			//TODO - enable start and stop the running of this script
-			pyBGService.getState() == 1 ? pyBGService.start(ev) : pyBGService.stop(ev);
-	
+		// Update the count from the settings.
+		const isRunning = pyBGService.getState() === ServiceState.running;
+		if (isRunning) {
+			pyBGService.stop(ev);
+			return;
 		}
-	
 
-	getFileNameFromPath(path: string): string{
-		var fileName = "";
-		fileName = path.substring(path.lastIndexOf("/") + 1);
+		if (this.checkSettingsComplete(ev.payload.settings)) {
+			pyBGService.start(ev);
+		} else {
+			streamDeck.logger.warn("Cannot start background service - incomplete settings");
+			ev.action.showAlert();
+		}
+
+	}
+
+
+	getFileNameFromPath(path: string): string {
+		const fileName = path.substring(path.lastIndexOf("/") + 1);
 		return fileName;
 	}
 
 	checkSettingsComplete(settings: PythonServiceSettings): boolean {
-		var check = false;
-		if (settings.path && settings.interval) {
+		const interval = this.getInterval(settings.interval);
+		if (settings.path && interval) {
 			streamDeck.logger.info("settings complete");
-			check = true;
+			return true;
 		}
-		return check;
-}
+		return false;
+	}
+
+	private getInterval(value: PythonServiceSettings["interval"]): number | undefined {
+		if (typeof value === "number") {
+			return Number.isFinite(value) && value > 0 ? value : undefined;
+		}
+		if (typeof value === "string") {
+			const parsed = Number(value.trim());
+			if (Number.isFinite(parsed) && parsed > 0) {
+				return parsed;
+			}
+		}
+		return undefined;
+	}
 }
 
 /**
@@ -101,10 +122,10 @@ export type PythonServiceSettings = {
 	image1?: string;
 	value2?: string;
 	image2?: string;
-	displayValues: boolean;
-	useVenv: boolean;
+	displayValues?: boolean;
+	useVenv?: boolean;
 	venvPath?: string;
-	interval: number;
-	id: string;
+	interval?: number | string;
+	id?: string;
 
 };

@@ -1,5 +1,7 @@
 import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
 import { ChildProcess, spawn } from "child_process";
+import * as os from "os";
+import * as path from "node:path";
 
 
 
@@ -36,7 +38,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	onWillAppear(ev: WillAppearEvent<PythonScriptSettings>): void | Promise<void> {
 		const settings = ev.payload.settings;
 		if (settings.path) {
-			if (settings.path.search(".py")) {
+			if (settings.path.includes(".py")) {
 				ev.action.setImage("imgs/actions/gemini_icons/pyFileLoaded.png")
 				var venvname = "";
 				if (settings.useVenv && settings.venvPath) {
@@ -57,7 +59,7 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	onDidReceiveSettings(ev: DidReceiveSettingsEvent<PythonScriptSettings>): Promise<void> | void {
 		const settings = ev.payload.settings;
 		if (settings.path) {
-			if (settings.path.search(".py")) {
+			if (settings.path.includes(".py")) {
 				
 				var venvname = "";
 				if (settings.useVenv && settings.venvPath) {
@@ -85,48 +87,50 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 	async onKeyDown(ev: KeyDownEvent<PythonScriptSettings>): Promise<void> {
 		// Update the count from the settings.
 		const settings = ev.payload.settings;
-		const { path } = settings;
+		const scriptPath = settings.path;
+		const useVenv = Boolean(settings.useVenv);
 		let pythonProcess: ChildProcess | undefined;
-		if (path) {
-			streamDeck.logger.info(`path to script is: ${path}`)
-			pythonProcess = this.createChildProcess(settings.useVenv, settings.venvPath, path);
+		if (scriptPath) {
+			streamDeck.logger.info(`path to script is: ${scriptPath}`);
+			pythonProcess = this.createChildProcess(useVenv, settings.venvPath, scriptPath);
 
-			if (pythonProcess != undefined && pythonProcess.stdout != null) {
+			if (pythonProcess && pythonProcess.stdout) {
 				streamDeck.logger.info(`start reading output`);
-				pythonProcess.stdout.on('data', (data: { toString: () => string; }) => {
-					streamDeck.logger.info(`stdout: ${data}`);
-					if (settings.displayValues) { ev.action.setTitle(data.toString().trim()); }
-					if (settings.image1 && (data.toString().trim() == (settings.value1 ?? ""))) {
-						ev.action.setImage(settings.image1)
+				pythonProcess.stdout.on("data", (data: { toString: () => string }) => {
+					const output = data.toString().trim();
+					streamDeck.logger.info(`stdout: ${output}`);
+					if (settings.displayValues) {
+						ev.action.setTitle(output);
 					}
-					if (settings.image2 && (data.toString().trim() == (settings.value2 ?? ""))) {
-						ev.action.setImage(settings.image2)
 
-					}else(
-						ev.action.setImage("imgs/actions/gemini_icons/pyFileLoaded.png")
-					)
+					if (settings.image1 && output === (settings.value1 ?? "")) {
+						ev.action.setImage(settings.image1);
+					} else if (settings.image2 && output === (settings.value2 ?? "")) {
+						ev.action.setImage(settings.image2);
+					} else {
+						ev.action.setImage("imgs/actions/gemini_icons/pyFileLoaded.png");
+					}
 				});
 
-				pythonProcess.stderr!.on('data', (data: { toString: () => string; }) => {
-					const errorString = data.toString().trim().replace(RegExp('/(?:\r\n|\r|\n)/g'), ' ');
+				pythonProcess.stderr?.on("data", (data: { toString: () => string }) => {
+					const errorString = data.toString().trim().replace(/(?:\r\n|\r|\n)/g, " ");
 					streamDeck.logger.error(`stderr: ${errorString}`);
 					ev.action.setImage("imgs/actions/pyFilecheckFailed.png");
 					let errorTitle = "python\nother\nissue";
 					for (const key in pythonErrorMap) {
-						if (errorString.search(key) > -1) {
+						if (errorString.includes(key)) {
 							errorTitle = pythonErrorMap[key];
 							break;
 						}
 					}
-					if (errorTitle == "python\nother\nissue"){
+					if (errorTitle === "python\nother\nissue") {
 						streamDeck.logger.error(errorString);
 					}
 					ev.action.setTitle(errorTitle);
 					ev.action.showAlert();
-
 				});
 
-				pythonProcess.on('close', (code: any) => {
+				pythonProcess.on("close", (code: number | null) => {
 					streamDeck.logger.info(`child process exited with code ${code}`);
 				});
 			}
@@ -135,29 +139,37 @@ export class PythonScript extends SingletonAction<PythonScriptSettings> {
 
 	}
 
-	createChildProcess(useVenv: boolean, venvPath: string | undefined, path: string) {
+	createChildProcess(useVenv: boolean, venvPath: string | undefined, scriptPath: string) {
 		let pythonProcess: ChildProcess | undefined;
-		if (useVenv && venvPath) {
-			
-			streamDeck.logger.info(`Use Virtual Environment: ${venvPath}`)
-			pythonProcess = spawn("cmd.exe", ["/c", `call ${venvPath.substring(0, venvPath.lastIndexOf("/"))}/Scripts/activate.bat && python ${path}`]);
+		const isWindows = os.platform() === "win32";
+		const normalizedScriptPath = isWindows ? path.win32.normalize(scriptPath) : scriptPath;
 
+		if (useVenv && venvPath) {
+			if (isWindows) {
+				const pythonExecutable = path.win32.join(venvPath, "Scripts", "python.exe");
+				pythonProcess = spawn(pythonExecutable, [normalizedScriptPath], { windowsHide: true });
+			} else {
+				const pythonExecutable = path.posix.join(venvPath, "bin", "python3");
+				pythonProcess = spawn(pythonExecutable, [normalizedScriptPath]);
+			}
+		} else {
+			if (isWindows) {
+				pythonProcess = spawn("python", [normalizedScriptPath], { windowsHide: true });
+			} else {
+				pythonProcess = spawn("python3", [normalizedScriptPath]);
+			}
 		}
-		else {
-			streamDeck.logger.info(`Use Python: ${path}`)
-			pythonProcess = spawn(`cmd.exe`, [`/c ${path}`]);
-			/*
-			if (pythonProcess.connected == false) {
-				streamDeck.logger.debug("python not found, trying python3")
-				pythonProcess = spawn("cmd.exe", ["/c", `python3 ${path}`]);
-			}*/
-		}
+
+		pythonProcess?.on("error", (error: Error) => {
+			streamDeck.logger.error(`Failed to start python process: ${error.message}`);
+		});
+
 		return pythonProcess;
 	}
 
 	getFileNameFromPath(path: string): string {
-		var fileName = "";
-		fileName = path.substring(path.lastIndexOf("/") + 1);
+		//geht the FileName from the path
+		const fileName = path.substring(path.lastIndexOf("/") + 1);
 		return fileName;
 	}
 
@@ -173,8 +185,8 @@ export type PythonScriptSettings = {
 	image1?: string;
 	value2?: string;
 	image2?: string;
-	displayValues: boolean;
-	useVenv: boolean;
+	displayValues?: boolean;
+	useVenv?: boolean;
 	venvPath?: string;
 
 };
